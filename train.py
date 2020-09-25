@@ -80,6 +80,7 @@ if __name__ == "__main__":
 
     # Initiate model
     model = smp.Linknet(in_channels=4, encoder_depth=3, classes=4, activation="sigmoid")
+    model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters())
 
@@ -161,7 +162,10 @@ if __name__ == "__main__":
             print("\n---- Evaluating Model ----")
             with torch.no_grad():
                 # FIXME
-                for test, data in test_loader:
+                for imgs, targets in test_loader:
+                    imgs = Variable(imgs.to(device))
+                    targets = Variable(targets.to(device), requires_grad=False)
+
                     label_distance = targets[:, 0, :, :]
                     label_end = targets[:, 1, :, :]
                     label_direction = targets[:, 2:4, :, :]
