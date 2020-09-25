@@ -46,10 +46,14 @@ class RoadBoundaryDataset(Dataset):
         default_transforms = vision_transforms.Compose(
             [
                 vision_transforms.ToPILImage(),
-                vision_transforms.Resize(size=(1280, 720)),
+                vision_transforms.Resize(size=(640, 360)),
                 vision_transforms.ToTensor(),
             ]
         )
+
+        assert complete_sample["road_direction_map"].shape[-1] == 2
+        assert complete_sample["inverse_distance_map"].shape[-1] == 1
+        assert complete_sample["end_points_map"].shape[-1] == 1
 
         rgb = default_transforms(complete_sample["rgb"].astype(np.uint8))
         height = default_transforms(complete_sample["lidar_height"].astype(np.uint8))
@@ -64,6 +68,10 @@ class RoadBoundaryDataset(Dataset):
             complete_sample["inverse_distance_map"].astype(np.uint8)
         )
 
+        assert end_points.shape[0] == 1
+        assert direction_map.shape[0] == 2
+        assert distance_map.shape[0] == 1
+
         # convert to torch tensors with CHW
         image_torch = torch.cat([rgb, height])
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
@@ -71,4 +79,7 @@ class RoadBoundaryDataset(Dataset):
         if self.transform:
             image_torch = self.transform(image_torch)
             targets_torch = self.transform(targets_torch)
+
+        assert targets_torch.shape[0] == 4
+
         return (image_torch, targets_torch)
