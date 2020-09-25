@@ -8,6 +8,7 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets
 from torchvision import transforms
 from torch.autograd import Variable
@@ -19,6 +20,9 @@ import segmentation_models_pytorch as smp
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
+    parser.add_argument(
+        "--learning_rate", type=float, default=1e-4, help="number of epochs"
+    )
     parser.add_argument(
         "--batch_size", type=int, default=8, help="size of each image batch"
     )
@@ -54,6 +58,11 @@ if __name__ == "__main__":
 
     # Get dataloader
     dataset = RoadBoundaryDataset(path=Path(opt.train_dataset))
+
+    test_dataset = RoadBoundaryDataset(path=Path(opt.test_dataset))
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=1, shuffle=False, num_workers=1
+    )
     dataloader = torch.utils.data.DataLoader(
         dataset,
         batch_size=opt.batch_size,
@@ -69,15 +78,18 @@ if __name__ == "__main__":
     cosine_similarity = torch.nn.CosineSimilarity(dim=1)
 
     # Initiate model
-    model = smp.Linknet(in_channels=4, encoder_depth=1, classes=4, activation="sigmoid")
+    model = smp.Linknet(in_channels=4, encoder_depth=3, classes=4, activation="sigmoid")
 
     optimizer = torch.optim.Adam(model.parameters())
+
+    tb_writer = SummaryWriter("tensorboard/road_boundary")
 
     num_epochs = 100
     for epoch in range(num_epochs):
         model.train()
         start_time = time.time()
         for batch_i, (imgs, targets) in enumerate(dataloader):
+
             batches_done = len(dataloader) * epoch + batch_i
 
             imgs = Variable(imgs.to(device))
@@ -87,14 +99,22 @@ if __name__ == "__main__":
             label_end = targets[:, 1, :, :]
             label_direction = targets[:, 2:4, :, :]
 
+            tb_writer.add_image("label_distance", label_distance, batches_done)
+            tb_writer.add_image("label_direction", label_direction, batches_done)
+            tb_writer.add_image("label_end", label_end, batches_done)
+
             outputs = model(imgs)
             feature_distance = outputs[:, 0, :, :]
             feature_end = outputs[:, 1, :, :]
             feature_direction = outputs[:, 2:4, :, :]
+
+            tb_writer.add_image("feature_direction", feature_direction, batches_done)
+            tb_writer.add_image("feature_distance", feature_distance, batches_done)
+            tb_writer.add_image("feature_end", feature_end, batches_done)
+
             # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
             k1 = 10
             k2 = 10
-
             distance_loss = mse_loss(feature_distance, label_distance)
             end_loss = mse_loss(feature_end, label_end)
             direction_loss_0 = cosine_similarity(feature_direction, label_direction)
@@ -105,6 +125,8 @@ if __name__ == "__main__":
                 + k1 * distance_loss
                 + k2 * end_loss
             ).sum()
+
+            tb_writer.add_scalar("loss", loss, batches_done)
 
             loss.backward()
 
@@ -132,7 +154,35 @@ if __name__ == "__main__":
             print(log_str)
 
         if epoch % opt.evaluation_interval == 0:
+            model.eval()
             print("\n---- Evaluating Model ----")
+            with torch.no_grad():
+                # FIXME
+                data, target = test_loader[0]
+                label_distance = targets[:, 0, :, :]
+                label_end = targets[:, 1, :, :]
+                label_direction = targets[:, 2:4, :, :]
+
+                outputs = model(imgs)
+                feature_distance = outputs[:, 0, :, :]
+                feature_end = outputs[:, 1, :, :]
+                feature_direction = outputs[:, 2:4, :, :]
+
+                # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
+                k1 = 10
+                k2 = 10
+                distance_loss = mse_loss(feature_distance, label_distance)
+                end_loss = mse_loss(feature_end, label_end)
+                direction_loss_0 = cosine_similarity(feature_direction, label_direction)
+
+                loss = (
+                    direction_loss_0
+                    # + direction_loss_1[:, :, :]
+                    + k1 * distance_loss
+                    + k2 * end_loss
+                ).sum()
+                print("Loss on test set: %s" % loss)
+
             # Evaluate the model on the validation set
             # TODO
 
