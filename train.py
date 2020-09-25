@@ -47,12 +47,12 @@ if __name__ == "__main__":
         default=1,
         help="number of epochs between evaluations",
     )
+    parser.add_argument("--gpu", type=int, default=0, help="gpu")
 
     opt = parser.parse_args()
     print(opt)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
     os.makedirs("~/output", exist_ok=True)
     os.makedirs("~/training/checkpoints", exist_ok=True)
 
