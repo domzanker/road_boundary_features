@@ -36,7 +36,7 @@ if __name__ == "__main__":
         help="path to training dataset",
     )
     parser.add_argument(
-        "--val_dataset",
+        "--test_dataset",
         type=str,
         default="/home/Zanker/data/nuscenes_test/data/",
         help="path to training dataset",
