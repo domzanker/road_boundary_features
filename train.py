@@ -48,13 +48,14 @@ if __name__ == "__main__":
         help="number of epochs between evaluations",
     )
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("--checkpoint_interval", type=int, default=10, help="")
 
     opt = parser.parse_args()
     print(opt)
 
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
-    os.makedirs("~/output", exist_ok=True)
-    os.makedirs("~/training/checkpoints", exist_ok=True)
+    os.makedirs("output", exist_ok=True)
+    os.makedirs("training/checkpoints", exist_ok=True)
 
     # Get dataloader
     dataset = RoadBoundaryDataset(path=Path(opt.train_dataset))
@@ -95,22 +96,22 @@ if __name__ == "__main__":
             imgs = Variable(imgs.to(device))
             targets = Variable(targets.to(device), requires_grad=False)
 
-            label_distance = targets[:, 0, :, :]
-            label_end = targets[:, 1, :, :]
+            label_distance = targets[:, 0:1, :, :]
+            label_end = targets[:, 1:2, :, :]
             label_direction = targets[:, 2:4, :, :]
 
-            tb_writer.add_image("label_distance", label_distance, batches_done)
-            tb_writer.add_image("label_direction", label_direction, batches_done)
-            tb_writer.add_image("label_end", label_end, batches_done)
+            tb_writer.add_images("label_distance", label_distance, batches_done)
+            # tb_writer.add_images("label_direction", label_direction, batches_done)
+            tb_writer.add_images("label_end", label_end, batches_done)
 
             outputs = model(imgs)
-            feature_distance = outputs[:, 0, :, :]
-            feature_end = outputs[:, 1, :, :]
+            feature_distance = outputs[:, 0:1, :, :]
+            feature_end = outputs[:, 1:2, :, :]
             feature_direction = outputs[:, 2:4, :, :]
 
-            tb_writer.add_image("feature_direction", feature_direction, batches_done)
-            tb_writer.add_image("feature_distance", feature_distance, batches_done)
-            tb_writer.add_image("feature_end", feature_end, batches_done)
+            # tb_writer.add_images("feature_direction", feature_direction, batches_done)
+            tb_writer.add_images("feature_distance", feature_distance, batches_done)
+            tb_writer.add_images("feature_end", feature_end, batches_done)
 
             # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
             k1 = 10
@@ -153,35 +154,40 @@ if __name__ == "__main__":
 
             print(log_str)
 
+            tb_writer.flush()
+
         if epoch % opt.evaluation_interval == 0:
             model.eval()
             print("\n---- Evaluating Model ----")
             with torch.no_grad():
                 # FIXME
-                data, target = test_loader[0]
-                label_distance = targets[:, 0, :, :]
-                label_end = targets[:, 1, :, :]
-                label_direction = targets[:, 2:4, :, :]
+                for test, data in test_loader:
+                    label_distance = targets[:, 0, :, :]
+                    label_end = targets[:, 1, :, :]
+                    label_direction = targets[:, 2:4, :, :]
 
-                outputs = model(imgs)
-                feature_distance = outputs[:, 0, :, :]
-                feature_end = outputs[:, 1, :, :]
-                feature_direction = outputs[:, 2:4, :, :]
+                    outputs = model(imgs)
+                    feature_distance = outputs[:, 0, :, :]
+                    feature_end = outputs[:, 1, :, :]
+                    feature_direction = outputs[:, 2:4, :, :]
 
-                # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
-                k1 = 10
-                k2 = 10
-                distance_loss = mse_loss(feature_distance, label_distance)
-                end_loss = mse_loss(feature_end, label_end)
-                direction_loss_0 = cosine_similarity(feature_direction, label_direction)
+                    # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
+                    k1 = 10
+                    k2 = 10
+                    distance_loss = mse_loss(feature_distance, label_distance)
+                    end_loss = mse_loss(feature_end, label_end)
+                    direction_loss_0 = cosine_similarity(
+                        feature_direction, label_direction
+                    )
 
-                loss = (
-                    direction_loss_0
-                    # + direction_loss_1[:, :, :]
-                    + k1 * distance_loss
-                    + k2 * end_loss
-                ).sum()
-                print("Loss on test set: %s" % loss)
+                    loss = (
+                        direction_loss_0
+                        # + direction_loss_1[:, :, :]
+                        + k1 * distance_loss
+                        + k2 * end_loss
+                    ).sum()
+                    print("Loss on test set: %s" % loss)
+                    break
 
             # Evaluate the model on the validation set
             # TODO
