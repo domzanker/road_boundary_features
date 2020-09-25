@@ -197,4 +197,6 @@ if __name__ == "__main__":
             # TODO
 
         if epoch % opt.checkpoint_interval == 0:
-            torch.save(model.state_dict(), "checkpoints/linknet_%d.pth" % epoch)
+            torch.save(
+                model.state_dict(), "training/checkpoints/linknet_%d.pth" % epoch
+            )
