@@ -1,4 +1,4 @@
 [core]
-    remote = data
-['remote "data"']
-    url = ../ssh:fzi-yellowstone/datadvc-storage
+    remote = remote
+['remote "remote"']
+    url = ssh://fzi-yellowstone/home/Zanker/data/dvc-storage
