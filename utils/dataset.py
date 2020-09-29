@@ -10,7 +10,14 @@ import torchvision.transforms as vision_transforms
 
 
 class RoadBoundaryDataset(Dataset):
-    def __init__(self, path: Path, transform=None, *, suffix=".pkl"):
+    def __init__(
+        self,
+        path: Path,
+        transform=None,
+        *,
+        suffix=".pkl",
+        image_size: Tuple[int, int] = (640, 360)
+    ):
         path = Path(path)
 
         assert path.is_dir()
@@ -21,6 +28,8 @@ class RoadBoundaryDataset(Dataset):
             if entry.suffix == suffix:
                 self.index.append(entry)
         self.transform = transform
+
+        self.image_size = image_size
         super().__init__()
 
     def __len__(self):
@@ -46,7 +55,7 @@ class RoadBoundaryDataset(Dataset):
         default_transforms = vision_transforms.Compose(
             [
                 vision_transforms.ToPILImage(),
-                vision_transforms.Resize(size=(640, 360)),
+                vision_transforms.Resize(size=self.image_size),
                 vision_transforms.ToTensor(),
             ]
         )
