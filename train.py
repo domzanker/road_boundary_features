@@ -84,8 +84,11 @@ if __name__ == "__main__":
     # define device (if available)
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
 
-    outpath = Path("outputs" / opt.tag)
+    outpath = Path("data/outputs" / opt.tag)
     outpath.mkdir(parents=True, exist_ok=True)
+
+    model_path = Path("data/models")
+    model_path.mkdir(parents=True, exist_ok=True)
 
     tb_writer = SummaryWriter(str(outpath / "log"))
 
@@ -222,5 +225,6 @@ if __name__ == "__main__":
 
         if epoch % configs["train"]["checkpoint-interval"] == 0:
             torch.save(
-                model.state_dict(), str(outpath / ("checkpoints/model_%d.pth" % epoch))
+                model.state_dict(),
+                str(model_path / ("model_%s_%d.pth" % (opt.tag, epoch))),
             )
