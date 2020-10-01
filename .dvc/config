@@ -1,6 +1,4 @@
 [core]
     remote = remote
 ['remote "remote"']
-    url = ssh://fzi-yellowstone/home/Zanker/data/dvc-storage
-['remote "local-remote"']
-    url = /home/Zanker/data/dvc-storage
+    url = ssh://Zanker@mps-yellowstone.fzi.de/home/Zanker/data/dvc-storage
