@@ -2,3 +2,5 @@
     remote = remote
 ['remote "remote"']
     url = ssh://fzi-yellowstone/home/Zanker/data/dvc-storage
+['remote "local-remote"']
+    url = /home/Zanker/data/dvc-storage
