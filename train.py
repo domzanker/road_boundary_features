@@ -70,7 +70,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
     parser.add_argument("--checkpoint_interval", type=int, default=10, help="")
-    parser.add_argument("--configs", type=str, default="config/config.yaml", help="")
+    parser.add_argument("--configs", type=str, default="params.yaml", help="")
+
+    parser.add_argument("--tag", type=str, default="training", help="")
 
     opt = parser.parse_args()
     print(opt)
@@ -82,8 +84,10 @@ if __name__ == "__main__":
     # define device (if available)
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
 
-    os.makedirs("output", exist_ok=True)
-    os.makedirs("training/checkpoints", exist_ok=True)
+    outpath = Path("outputs" / opt.tag)
+    outpath.mkdir(parents=True, exist_ok=True)
+
+    tb_writer = SummaryWriter(str(outpath / "log"))
 
     # Get dataloader
     train_dataset = RoadBoundaryDataset(path=Path(configs["dataset"]["train-dataset"]))
@@ -108,7 +112,7 @@ if __name__ == "__main__":
             encoder_weights=model_configs["encoder_weights"],
             in_channels=4,
             encoder_depth=model_configs["encoder_depth"],
-            classes=4,
+            classes=64,
             activation=model_configs["activation"],
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
@@ -122,15 +126,12 @@ if __name__ == "__main__":
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
 
     loss = CombinedLoss()
-    # cosine similarity for direction_map
-    # TODO learning rate
+
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=configs["train"]["learning_rate"],
         weight_decay=configs["train"]["weight_decay"],
     )
-
-    tb_writer = SummaryWriter("tensorboard/road_boundary")
 
     num_epochs = configs["train"]["epochs"]
     for epoch in range(num_epochs):
@@ -193,7 +194,7 @@ if __name__ == "__main__":
 
             tb_writer.flush()
 
-        if epoch % configs["train"]["eval-interval"] == 0:
+        if epoch % configs["train"]["eval-interval"] == 0 and epoch > 0:
             model.eval()
             print("\n>>>> Evaluating Model <<<<")
             with torch.no_grad():
@@ -221,5 +222,5 @@ if __name__ == "__main__":
 
         if epoch % configs["train"]["checkpoint-interval"] == 0:
             torch.save(
-                model.state_dict(), "training/checkpoints/linknet_%d.pth" % epoch
+                model.state_dict(), str(outpath / ("checkpoints/model_%d.pth" % epoch))
             )
