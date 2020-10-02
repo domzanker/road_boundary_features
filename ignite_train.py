@@ -159,8 +159,8 @@ def train(opt):
             "end_loss": endLoss.item(),
             "dir_loss": dirLoss.item(),
         }
-        progress_bar.log_message("rest")
-        return torch.cat(predictions), torch.cat(targets), kwargs
+
+        return torch.cat(predictions, dim=1), torch.cat(targets, dim=1), kwargs
 
     # define ignite objects
     trainer = Engine(train_step)
