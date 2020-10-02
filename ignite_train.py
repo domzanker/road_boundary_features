@@ -155,7 +155,7 @@ def train(opt):
     # define progress bar
     progress_bar = ProgressBar()
     progress_bar.attach(
-        trainer, event_name=Events.ITERATION_COMPLETED, metric_names="loss"
+        trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
     )
 
     trainer.run(train_loader, max_epochs=10)
