@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 direction=(feature_direction, label_direction),
             )
 
-            tb_writer.add_scalar("loss", loss, batches_done)
+            tb_writer.add_scalar("loss", lo, batches_done)
 
             lo.backward()
 
@@ -221,7 +221,7 @@ if __name__ == "__main__":
                         end_points=(feature_end, label_end),
                         direction=(feature_direction, label_direction),
                     )
-                    print("Loss on test set: %s" % loss)
+                    print("Loss on test set: %s" % lo)
 
             # Evaluate the model on the validation set
             # TODO
