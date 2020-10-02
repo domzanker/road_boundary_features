@@ -8,7 +8,15 @@ import yaml
 from pathlib import Path
 
 from ignite.engine import Events, Engine
-from ignite.metrics import Accuracy, RunningAverage
+from ignite.metrics import (
+    Accuracy,
+    RunningAverage,
+    Average,
+    MeanPairwiseDistance,
+    MeanSquaredError,
+)
+import ignite.contrib.metrics.regression as ireg
+from ignite.contrib.metrics import GpuInfo
 from ignite.handlers import ModelCheckpoint
 from ignite.contrib.handlers import ProgressBar
 
@@ -25,12 +33,6 @@ def train(opt):
     configs_file = Path(opt.configs)
     with configs_file.open("rb") as f:
         configs = yaml.safe_load(f)
-
-    outpath = Path("data/outputs/%s" % opt.tag)
-    outpath.mkdir(parents=True, exist_ok=True)
-
-    model_path = Path("data/models")
-    model_path.mkdir(parents=True, exist_ok=True)
 
     # define device (if available)
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
@@ -64,13 +66,11 @@ def train(opt):
         image_size=configs["dataset"]["size"],
         # transform=preprocessing_fn,
     )
-    """
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["test-dataset"]),
         image_size=configs["dataset"]["size"],
         # transform=preprocessing_fn,
     )
-    """
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=configs["train"]["batch-size"],
@@ -78,9 +78,9 @@ def train(opt):
         num_workers=opt.cpu_workers,
         pin_memory=True,
     )
-    # val_loader = torch.utils.data.DataLoader(
-    #    valid_dataset, batch_size=1, shuffle=False, num_workers=2
-    # )
+    val_loader = torch.utils.data.DataLoader(
+        valid_dataset, batch_size=1, shuffle=False, num_workers=2
+    )
 
     optimizer = torch.optim.Adam(
         model.parameters(),
@@ -119,14 +119,7 @@ def train(opt):
 
         optimizer.step()
 
-        return combined_loss.item()
-
-    """
-            "loss": combined_loss.item(),
-            "dist_loss": distLoss.item(),
-            "end_loss": endLoss.item(),
-            "dir_loss": dirLoss.item(),
-        }
+        return combined_loss.item(), distLoss.item(), endLoss.item(), dirLoss.item()
 
     def valid_step(engine, batch):
         model.eval()
@@ -134,70 +127,125 @@ def train(opt):
         imgs, targets = batch
         imgs = imgs.to(device)
 
+        targets = targets.to(device)
         dist_t = targets[:, 0:1, :, :]
         end_t = targets[:, 1:2, :, :]
         dir_t = targets[:, 2:4, :, :]
         targets = [dist_t, end_t, dir_t]
-        targets = targets.to(device)
 
         model.zero_grad()
 
         predictions = model(imgs)
 
-        loss, single_losses = criterion(predictions, targets)
+        # compute loss function
+        distLoss = torch.nn.functional.mse_loss(predictions[0], targets[0])
+        endLoss = torch.nn.functional.mse_loss(predictions[1], targets[1])
+        dirLoss = torch.nn.functional.cosine_similarity(
+            predictions[2], targets[2]
+        ).sum()
 
-        return {"loss": loss}
-    """
+        weight = 10
+        combined_loss = dirLoss + weight * distLoss + weight * endLoss
+
+        kwargs = {
+            "dist_pred": predictions[0],
+            "end_pred": predictions[1],
+            "dir_pred": predictions[2],
+            "dist": dist_t,
+            "end": end_t,
+            "dir": dir_t,
+            "loss": combined_loss.item(),
+            "dist_loss": distLoss.item(),
+            "end_loss": endLoss.item(),
+            "dir_loss": dirLoss.item(),
+        }
+        return torch.cat(predictions), torch.cat(targets), kwargs
 
     # define ignite objects
     trainer = Engine(train_step)
+    train_evaluator = Engine(valid_step)
+    valid_evaluator = Engine(valid_step)
+
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar()
-    RunningAverage(output_transform=lambda x: x).attach(trainer, name="loss")
 
-    progress_bar.attach(
-        trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
+    RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
+    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
+    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
+    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
+    GpuInfo().attach(trainer, name="gpu")
+    progress_bar.attach(trainer, metric_names=["all"])
+
+    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+        train_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        train_evaluator, name="l_dist"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        train_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        train_evaluator, name="l_dir"
     )
 
-    trainer.run(train_loader, max_epochs=10)
-    """
+    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+        valid_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        valid_evaluator, name="l_dist"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        valid_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        valid_evaluator, name="l_dir"
+    )
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_training_results(engine):
+        train_evaluator.run(train_loader)
+        metrics = train_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["dist_loss"],
+                metrics["end_loss"],
+                metrics["dir_loss"],
+            )
+        )
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_validation_results(engine):
+        valid_evaluator.run(val_loader)
+        metrics = valid_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["dist_loss"],
+                metrics["end_loss"],
+                metrics["dir_loss"],
+            )
+        )
+
     checkpoint_handler = ModelCheckpoint(
-        dirname="",
-        filename_prefix="",
-        save_interval=0,
+        dirname="data/models",
+        filename_prefix=("model_%s" % opt.tag),
+        n_saved=2,
+        save_as_state_dict=True,
         require_empty=False,
         create_dir=True,
     )
-    """
-    """
-    log_interval = 100
-    @trainer.on((Events.ITERATION_COMPLETED(every=log_interval)))
-    def log_training_loss(trainer):
-        print(
-            "Epoch[{}] Loss: {:.2f}]".format(trainer.state.epoch, trainer.state.output)
-        )
+    trainer.add_event_handler(
+        Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
+        checkpoint_handler,
+        {"model": model},
+    )
 
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_training_results(trainer):
-        evaluator.run(train_loader)
-        metrics = evaluator.state.metrics
-        print(
-            "Training Results - Epoch: {} Avg accuracy: {:.2f} Avg loss: {:.2f}]]".format(
-                trainer.state.epoch, metrics["accuracy"], metrics["loss"]
-            )
-        )
-
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(trainer):
-        evaluator.run(val_loader)
-        metrics = evaluator.state.metrics
-        print(
-            "Validation Results - Epoch: {} Avg accuracy: {:.2f} Avg loss: {:.2f}]]".format(
-                trainer.state.epoch, metrics["accuracy"], metrics["loss"]
-            )
-        )
-    """
+    trainer.run(train_loader, max_epochs=configs["train"]["epochs"])
 
 
 if __name__ == "__main__":
