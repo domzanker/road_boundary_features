@@ -10,6 +10,7 @@ from pathlib import Path
 from ignite.engine import Events, Engine
 from ignite.metrics import Accuracy, Loss
 from ignite.handlers import ModelCheckpoint
+from ignite.contrib.handlers import ProgressBar
 
 import torch
 
@@ -150,6 +151,13 @@ def train(opt):
     # define ignite objects
     trainer = Engine(train_step)
     # evaluator = Engine(valid_step)
+    # define progress bar
+    progress_bar = ProgressBar(persists=False, loader=train_loader)
+
+    trainer.add_event_handler(
+        event_name=Events.ITERATION_COMPLETED, handler=progress_bar
+    )
+    trainer.run(train_loader, max_epochs=10)
     """
     checkpoint_handler = ModelCheckpoint(
         dirname="",
@@ -159,18 +167,14 @@ def train(opt):
         create_dir=True,
     )
     """
-
-    # val_metrics = {"accuracy": Accuracy(), "loss": Loss(criterion)}
-
+    """
     log_interval = 100
-
     @trainer.on((Events.ITERATION_COMPLETED(every=log_interval)))
     def log_training_loss(trainer):
         print(
             "Epoch[{}] Loss: {:.2f}]".format(trainer.state.epoch, trainer.state.output)
         )
 
-    """
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(trainer):
         evaluator.run(train_loader)
@@ -191,8 +195,6 @@ def train(opt):
             )
         )
     """
-
-    trainer.run(train_loader, max_epochs=100)
 
 
 if __name__ == "__main__":
