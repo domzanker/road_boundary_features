@@ -250,7 +250,7 @@ def train(opt):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
-        valid_evaluator.run(val_loader, max_epochs=1)
+        valid_evaluator.run(val_loader, epoch_length=150, max_epochs=1)
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
             "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
