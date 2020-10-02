@@ -1,8 +1,8 @@
 dataset:
-        size: [640, 360]
-        #size: [1280, 720]
+        #size: [640, 360]
+        size: [1280, 720]
         train-dataset: "data/nuscenes-complete/train"
-        valid-dataset: "data/nuscenes-complete/test"
+        valid-dataset: "data/nuscenes-complete/valid"
 
 train:
         learning-rate: 0.001
