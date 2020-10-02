@@ -111,7 +111,7 @@ if __name__ == "__main__":
     # Initiate model
     model_configs = configs["model"]
     if not model_configs["use_custom_encoder"]:
-        model = smp.Linknet(
+        encoder = smp.Linknet(
             encoder_name=model_configs["encoder"],
             encoder_weights=model_configs["encoder_weights"],
             in_channels=4,
@@ -120,7 +120,6 @@ if __name__ == "__main__":
             activation=model_configs["activation"],
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
-    model.to(device)
 
     preprocessing_fn = smp.encoders.get_preprocessing_fn(
         encoder_name=model_configs["encoder"],
@@ -128,6 +127,9 @@ if __name__ == "__main__":
     )
 
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
+
+    model = torch.nn.Sequential(encoder, segmentation_head)
+    model.to(device)
 
     loss = CombinedLoss()
 
