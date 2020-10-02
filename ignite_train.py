@@ -18,7 +18,7 @@ from ignite.metrics import (
 import ignite.contrib.metrics.regression as ireg
 from ignite.contrib.metrics import GpuInfo
 from ignite.handlers import ModelCheckpoint
-from ignite.contrib.handlers import ProgressBar
+from ignite.contrib.handlers import ProgressBar, tensorboard_logger
 
 import torch
 
@@ -211,12 +211,29 @@ def train(opt):
         valid_evaluator, name="l_dir"
     )
 
+    tb_logger = tensorboard_logger.TensorboardLogger(
+        logdir="data/tensorboard/tb_logs_{}".format(opt.tag)
+    )
+    tb_logger.attach(
+        trainer, tag="training", event_name=Events.ITERATION_COMPLETED, metrics="all"
+    )
+    tb_logger.attach_output_handler(
+        valid_evaluator,
+        tag="validation",
+        event_name=Events.EPOCH_COMPLETED,
+        metrics_names="all",
+        global_step_transform=tensorboard_logger.global_step_from_engine(trainer),
+    )
+    tb_logger.attach_opt_params_handler(
+        trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
+    )
+
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
-        train_evaluator.run(train_loader, epoch_length=1, max_epochs=10)
+        train_evaluator.run(train_loader, epoch_length=len(train_loader), max_epochs=10)
         metrics = train_evaluator.state.metrics
         progress_bar.log_message(
-            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
                 engine.state.epoch,
                 metrics["mpd"],
                 metrics["l_dist"],
@@ -230,7 +247,7 @@ def train(opt):
         valid_evaluator.run(val_loader, epoch_length=1, max_epochs=10)
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
-            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
+            "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
                 engine.state.epoch,
                 metrics["mpd"],
                 metrics["l_dist"],
@@ -255,24 +272,18 @@ def train(opt):
 
     trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=100)
 
+    tb_logger.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-    parser.add_argument(
-        "--learning_rate", type=float, default=1e-4, help="number of epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=8, help="size of each image batch"
-    )
     parser.add_argument(
         "--cpu_workers", type=int, default=4, help="number of cpu threads for loading"
     )
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
-    parser.add_argument("--checkpoint_interval", type=int, default=10, help="")
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
-
     parser.add_argument("--tag", type=str, default="training", help="")
+    # FIXME resume training
 
     opt = parser.parse_args()
 
