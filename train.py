@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=configs["train"]["learning_rate"],
+        lr=configs["train"]["learning-rate"],
         weight_decay=configs["train"]["weight_decay"],
     )
 
