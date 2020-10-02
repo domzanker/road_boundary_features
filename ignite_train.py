@@ -7,8 +7,9 @@ import argparse
 import yaml
 from pathlib import Path
 
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.engine import Events, Engine
 from ignite.metrics import Accuracy, Loss
+from ignite.handlers import ModelCheckpoint
 
 import torch
 
@@ -62,11 +63,13 @@ def train(opt):
         image_size=configs["dataset"]["size"],
         # transform=preprocessing_fn,
     )
+    """
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["test-dataset"]),
         image_size=configs["dataset"]["size"],
         # transform=preprocessing_fn,
     )
+    """
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=configs["train"]["batch-size"],
@@ -74,22 +77,88 @@ def train(opt):
         num_workers=opt.cpu_workers,
         pin_memory=True,
     )
-    val_loader = torch.utils.data.DataLoader(
-        valid_dataset, batch_size=1, shuffle=False, num_workers=2
-    )
+    # val_loader = torch.utils.data.DataLoader(
+    #    valid_dataset, batch_size=1, shuffle=False, num_workers=2
+    # )
 
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=configs["train"]["learning-rate"],
         weight_decay=configs["train"]["weight_decay"],
     )
-    criterion = CombinedLoss()
-    trainer = create_supervised_trainer(
-        model, optimizer=optimizer, loss_fn=criterion, device=device
-    )
+    # criterion = CombinedLoss()
 
-    val_metrics = {"accuracy": Accuracy(), "loss": Loss(criterion)}
-    evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=device)
+    def train_step(engine, batch):
+        model.train()
+
+        imgs, targets = batch
+        imgs = imgs.to(device)
+
+        dist_t = targets[:, 0:1, :, :]
+        end_t = targets[:, 1:2, :, :]
+        dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t, end_t, dir_t]
+        targets = targets.to(device)
+
+        model.zero_grad()
+
+        predictions = model(imgs)
+
+        # compute loss function
+        distLoss = torch.nn.functional.mse_loss(predictions[0], targets[0])
+        endLoss = torch.nn.functional.mse_loss(predictions[1], targets[1])
+        dirLoss = torch.nn.functional.cosine_similarity(predictions[2], targets[2])
+
+        weight = 10
+        combined_loss = dirLoss + weight * distLoss + weight * endLoss
+
+        combined_loss.backward()
+
+        optimizer.step()
+
+        return {
+            "loss": combined_loss.item(),
+            "dist_loss": distLoss.item(),
+            "end_loss": endLoss.item(),
+            "dir_loss": dirLoss.item(),
+        }
+
+    """
+    def valid_step(engine, batch):
+        model.eval()
+
+        imgs, targets = batch
+        imgs = imgs.to(device)
+
+        dist_t = targets[:, 0:1, :, :]
+        end_t = targets[:, 1:2, :, :]
+        dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t, end_t, dir_t]
+        targets = targets.to(device)
+
+        model.zero_grad()
+
+        predictions = model(imgs)
+
+        loss, single_losses = criterion(predictions, targets)
+
+        return {"loss": loss}
+    """
+
+    # define ignite objects
+    trainer = Engine(train_step)
+    # evaluator = Engine(valid_step)
+    """
+    checkpoint_handler = ModelCheckpoint(
+        dirname="",
+        filename_prefix="",
+        save_interval=0,
+        require_empty=False,
+        create_dir=True,
+    )
+    """
+
+    # val_metrics = {"accuracy": Accuracy(), "loss": Loss(criterion)}
 
     log_interval = 100
 
@@ -99,6 +168,7 @@ def train(opt):
             "Epoch[{}] Loss: {:.2f}]".format(trainer.sate.epoch, trainer.state.output)
         )
 
+    """
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(trainer):
         evaluator.run(train_loader)
@@ -118,6 +188,7 @@ def train(opt):
                 trainer.state.epoch, metrics["accuracy"], metrics["loss"]
             )
         )
+    """
 
     trainer.run(train_loader, max_epochs=100)
 
