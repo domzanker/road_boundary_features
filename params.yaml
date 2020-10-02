@@ -13,7 +13,7 @@ train:
 
         checkpoint-interval: 10
 
-models:
+model:
         use_custom_encoder: false
         encoder: "resnet18"
         encoder_weights: "imagenet"
