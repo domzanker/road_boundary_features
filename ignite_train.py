@@ -154,6 +154,8 @@ def train(opt):
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar()
+
+    Loss(output_transform=lambda x: x).attach(trainer, "loss")
     progress_bar.attach(
         trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
     )
