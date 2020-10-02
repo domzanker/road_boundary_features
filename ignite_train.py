@@ -94,11 +94,11 @@ def train(opt):
         imgs, targets = batch
         imgs = imgs.to(device)
 
+        targets = targets.to(device)
         dist_t = targets[:, 0:1, :, :]
         end_t = targets[:, 1:2, :, :]
         dir_t = targets[:, 2:4, :, :]
         targets = [dist_t, end_t, dir_t]
-        targets = targets.to(device)
 
         model.zero_grad()
 
@@ -107,7 +107,9 @@ def train(opt):
         # compute loss function
         distLoss = torch.nn.functional.mse_loss(predictions[0], targets[0])
         endLoss = torch.nn.functional.mse_loss(predictions[1], targets[1])
-        dirLoss = torch.nn.functional.cosine_similarity(predictions[2], targets[2])
+        dirLoss = torch.nn.functional.cosine_similarity(
+            predictions[2], targets[2]
+        ).sum()
 
         weight = 10
         combined_loss = dirLoss + weight * distLoss + weight * endLoss
