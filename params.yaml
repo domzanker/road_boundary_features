@@ -9,7 +9,7 @@ train:
         weight_decay: 0.0004
 
         epochs: 100
-        eval-intervall: 10
+        eval-interval: 10
 
         checkpoint-interval: 10
 
