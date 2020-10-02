@@ -8,7 +8,7 @@ import yaml
 from pathlib import Path
 
 from ignite.engine import Events, Engine
-from ignite.metrics import Accuracy, Loss
+from ignite.metrics import Accuracy, RunningAverage
 from ignite.handlers import ModelCheckpoint
 from ignite.contrib.handlers import ProgressBar
 
@@ -117,13 +117,6 @@ def train(opt):
 
         combined_loss.backward()
 
-        engine.state.metrics = {
-            "loss": combined_loss.item(),
-            "dist_loss": distLoss.item(),
-            "end_loss": endLoss.item(),
-            "dir_loss": dirLoss.item(),
-        }
-
         optimizer.step()
 
         return combined_loss.item()
@@ -161,6 +154,7 @@ def train(opt):
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar()
+    RunningAverage.attach(trainer, lambda x: x)
 
     progress_bar.attach(
         trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
