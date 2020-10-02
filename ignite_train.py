@@ -119,14 +119,15 @@ def train(opt):
 
         optimizer.step()
 
-        return {
+        return combined_loss.item()
+
+    """
             "loss": combined_loss.item(),
             "dist_loss": distLoss.item(),
             "end_loss": endLoss.item(),
             "dir_loss": dirLoss.item(),
         }
 
-    """
     def valid_step(engine, batch):
         model.eval()
 
