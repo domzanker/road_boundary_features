@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # define device (if available)
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
 
-    outpath = Path("data/outputs" / opt.tag)
+    outpath = Path("data/outputs/%s" % opt.tag)
     outpath.mkdir(parents=True, exist_ok=True)
 
     model_path = Path("data/models")
