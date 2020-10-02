@@ -8,6 +8,7 @@ import yaml
 from pathlib import Path
 
 import pkbar
+from math import ceil
 
 import torch
 from torch.utils.data import DataLoader
@@ -142,12 +143,17 @@ if __name__ == "__main__":
     )
 
     num_epochs = configs["train"]["epochs"]
-    train_per_epoch = len(train_loader)
+    train_per_epoch = int(ceil(len(train_loader) / configs["train"]["batch-size"]))
 
     for epoch in range(num_epochs):
 
         # define progress bar
-        bar = pkbar.Kbar(target=train_per_epoch, epoch=epoch, num_epochs=num_epochs)
+        bar = pkbar.Kbar(
+            target=train_per_epoch,
+            epoch=epoch,
+            num_epochs=num_epochs,
+            stateful_metrics=["ETA"],
+        )
 
         model.train()
         start_time = time.time()
