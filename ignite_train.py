@@ -154,7 +154,7 @@ def train(opt):
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar()
-    RunningAverage.attach(trainer, lambda x: x, name="loss")
+    RunningAverage().attach(trainer, name="loss")
 
     progress_bar.attach(
         trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
