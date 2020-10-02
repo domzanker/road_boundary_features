@@ -7,6 +7,8 @@ import argparse
 import yaml
 from pathlib import Path
 
+import pkbar
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -140,7 +142,13 @@ if __name__ == "__main__":
     )
 
     num_epochs = configs["train"]["epochs"]
+    train_per_epoch = len(train_loader)
+
     for epoch in range(num_epochs):
+
+        # define progress bar
+        bar = pkbar.Kbar(target=train_per_epoch, epoch=epoch, num_epochs=num_epochs)
+
         model.train()
         start_time = time.time()
         for batch_i, (imgs, targets) in enumerate(train_loader):
@@ -182,27 +190,28 @@ if __name__ == "__main__":
             #   Log progress
             # ----------------
 
+            """
             log_str = "\n>>>> [Epoch %d/%d, Batch %d/%d] <<<< \n" % (
                 epoch,
                 num_epochs,
                 batch_i,
                 len(train_loader),
             )
+            """
 
             # Determine approximate time left for epoch
             epoch_batches_left = len(train_loader) - (batch_i + 1)
             time_left = datetime.timedelta(
                 seconds=epoch_batches_left * (time.time() - start_time) / (batch_i + 1)
             )
-            log_str += f"\n>>>> ETA {time_left}"
+            # log_str += f"\n>>>> ETA {time_left}"
 
-            print(log_str)
+            bar.update(batch_i, values=[("ETA", time_left), ("train_loss", lo)])
 
             tb_writer.flush()
 
         if epoch % configs["train"]["eval-interval"] == 0 and epoch > 0:
             model.eval()
-            print("\n>>>> Evaluating Model <<<<")
             with torch.no_grad():
                 # FIXME
                 for imgs, targets in valid_loader:
@@ -221,10 +230,8 @@ if __name__ == "__main__":
                         end_points=(feature_end, label_end),
                         direction=(feature_direction, label_direction),
                     )
-                    print("Loss on test set: %s" % lo)
-
-            # Evaluate the model on the validation set
-            # TODO
+                    # print("Loss on test set: %s" % lo)
+                    bar.add(1, values=[("val_loss", lo)])
 
         if epoch % configs["train"]["checkpoint-interval"] == 0:
             torch.save(
