@@ -1,7 +1,7 @@
 dataset:
         size: [1280, 720]
-        train-dataset: "data/train"
-        test-dataset: "data/test"
+        train-dataset: "data/nuscenes-complete/train"
+        test-dataset: "data/nuscenes-complete/test"
 
 train:
         learning-rate: 0.001
