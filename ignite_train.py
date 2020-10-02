@@ -67,7 +67,7 @@ def train(opt):
         # transform=preprocessing_fn,
     )
     valid_dataset = RoadBoundaryDataset(
-        path=Path(configs["dataset"]["test-dataset"]),
+        path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
         # transform=preprocessing_fn,
     )
@@ -235,7 +235,7 @@ def train(opt):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
-        train_evaluator.run(train_loader, epoch_length=len(valid_dataset), max_epochs=1)
+        train_evaluator.run(train_loader, epoch_length=150, max_epochs=1)
         metrics = train_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
