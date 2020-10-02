@@ -152,11 +152,11 @@ def train(opt):
     trainer = Engine(train_step)
     # evaluator = Engine(valid_step)
     # define progress bar
-    progress_bar = ProgressBar(persists=False, loader=train_loader)
-
-    trainer.add_event_handler(
-        event_name=Events.ITERATION_COMPLETED, handler=progress_bar
+    progress_bar = ProgressBar()
+    progress_bar.attach(
+        trainer, event_name=Events.ITERATION_COMPLETED, metric_names="loss"
     )
+
     trainer.run(train_loader, max_epochs=10)
     """
     checkpoint_handler = ModelCheckpoint(
