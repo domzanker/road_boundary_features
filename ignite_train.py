@@ -159,6 +159,7 @@ def train(opt):
             "end_loss": endLoss.item(),
             "dir_loss": dirLoss.item(),
         }
+        progress_bar.log_message("rest")
         return torch.cat(predictions), torch.cat(targets), kwargs
 
     # define ignite objects
@@ -252,7 +253,7 @@ def train(opt):
         {"model": model},
     )
 
-    trainer.run(train_loader, max_epochs=configs["train"]["epochs"])
+    trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=100)
 
 
 if __name__ == "__main__":
