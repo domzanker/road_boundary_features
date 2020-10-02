@@ -158,6 +158,7 @@ class ConvBlock(torch.nn.Module):
         activation: str = "relu",
         batch_norm: bool = True,
     ):
+        super(ConvBlock, self).__init__()
         if batch_norm:
             self.batch_norm = torch.nn.BatchNorm2d(in_channels)
         else:
