@@ -135,3 +135,5 @@ if __name__ == "__main__":
     parser.add_argument("--tag", type=str, default="training", help="")
 
     opt = parser.parse_args()
+
+    train(opt)
