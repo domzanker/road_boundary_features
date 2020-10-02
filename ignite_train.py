@@ -46,20 +46,26 @@ def train(opt):
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
 
+    """
     preprocessing_fn = smp.encoders.get_preprocessing_fn(
         encoder_name=model_configs["encoder"],
         pretrained=model_configs["encoder_weights"],
     )
+    """
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
     model = torch.nn.Sequential(encoder, segmentation_head)
     model.to(device)
 
     # Get dataloader
     train_dataset = RoadBoundaryDataset(
-        path=Path(configs["dataset"]["train-dataset"]), transform=preprocessing_fn
+        path=Path(configs["dataset"]["train-dataset"]),
+        image_size=configs["dataset"]["size"],
+        # transform=preprocessing_fn,
     )
     valid_dataset = RoadBoundaryDataset(
-        path=Path(configs["dataset"]["test-dataset"]), transform=preprocessing_fn
+        path=Path(configs["dataset"]["test-dataset"]),
+        image_size=configs["dataset"]["size"],
+        # transform=preprocessing_fn,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
