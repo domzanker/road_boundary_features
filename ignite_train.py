@@ -172,6 +172,7 @@ def train(opt):
     progress_bar = ProgressBar(persist=True)
     valid_bar = ProgressBar()
     valid_bar.attach(train_evaluator)
+    valid_bar.attach(valid_evaluator)
 
     RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
     RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
