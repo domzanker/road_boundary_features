@@ -212,7 +212,7 @@ def train(opt):
     )
 
     tb_logger = tensorboard_logger.TensorboardLogger(
-        logdir="data/tensorboard/tb_logs_{}".format(opt.tag)
+        log_dir="data/tensorboard/tb_logs_{}".format(opt.tag)
     )
     tb_logger.attach(
         trainer, tag="training", event_name=Events.ITERATION_COMPLETED, metrics="all"
