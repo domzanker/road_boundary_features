@@ -117,7 +117,7 @@ if __name__ == "__main__":
             in_channels=4,
             encoder_depth=model_configs["encoder_depth"],
             classes=64,
-            activation=torch.nn.ReLU(),  # defined_activations[model_configs["activation"]],
+            activation=model_configs["activation"],
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
     model.to(device)
