@@ -276,7 +276,7 @@ def train(opt):
         {"model": model},
     )
 
-    trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=100)
+    trainer.run(train_loader, max_epochs=configs["train"]["epochs"])
     tb_logger.close()
 
 
