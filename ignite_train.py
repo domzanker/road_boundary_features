@@ -117,6 +117,13 @@ def train(opt):
 
         combined_loss.backward()
 
+        engine.state.metrics = {
+            "loss": combined_loss.item(),
+            "dist_loss": distLoss.item(),
+            "end_loss": endLoss.item(),
+            "dir_loss": dirLoss.item(),
+        }
+
         optimizer.step()
 
         return combined_loss.item()
@@ -155,7 +162,6 @@ def train(opt):
     # define progress bar
     progress_bar = ProgressBar()
 
-    Loss(output_transform=lambda x: x).attach(trainer, "loss")
     progress_bar.attach(
         trainer, event_name=Events.ITERATION_COMPLETED, metric_names=["loss"]
     )
