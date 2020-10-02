@@ -175,7 +175,14 @@ def train(opt):
     RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
     RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
     GpuInfo().attach(trainer, name="gpu")
-    progress_bar.attach(trainer, metric_names=["all"])
+    progress_bar.attach(
+        trainer,
+        metric_names=[
+            "loss",
+            "gpu:{} mem(%)".format(opt.gpu),
+            "gpu:{} util(%)".format(opt.gpu),
+        ],
+    )
 
     MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
         train_evaluator, "mpd"
