@@ -227,6 +227,7 @@ def train(opt):
     tb_logger.attach_opt_params_handler(
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
     )
+    tb_logger.close()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
@@ -271,8 +272,6 @@ def train(opt):
     )
 
     trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=100)
-
-    tb_logger.close()
 
 
 if __name__ == "__main__":
