@@ -212,7 +212,7 @@ if __name__ == "__main__":
             )
             # log_str += f"\n>>>> ETA {time_left}"
 
-            bar.update(batch_i, values=[("ETA", time_left), ("train_loss", lo)])
+            bar.update(batch_i, values=[("ETA", float(time_left)), ("train_loss", lo)])
 
             tb_writer.flush()
 
