@@ -213,29 +213,29 @@ def train(opt):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
-        train_evaluator.run(train_loader)
+        train_evaluator.run(train_loader, epoch_length=1, max_epochs=10)
         metrics = train_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
                 engine.state.epoch,
                 metrics["mpd"],
-                metrics["dist_loss"],
-                metrics["end_loss"],
-                metrics["dir_loss"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
             )
         )
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
-        valid_evaluator.run(val_loader)
+        valid_evaluator.run(val_loader, epoch_length=1, max_epochs=10)
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.2f} endMap: {:.2f} directionMap: {:.2f}".format(
                 engine.state.epoch,
                 metrics["mpd"],
-                metrics["dist_loss"],
-                metrics["end_loss"],
-                metrics["dir_loss"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
             )
         )
 
