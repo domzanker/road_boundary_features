@@ -170,6 +170,8 @@ def train(opt):
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar(persist=True)
+    valid_bar = ProgressBar()
+    valid_bar.attach(train_evaluator)
 
     RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
     RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
@@ -230,11 +232,10 @@ def train(opt):
     tb_logger.attach_opt_params_handler(
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
     )
-    tb_logger.close()
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
-        train_evaluator.run(train_loader, epoch_length=len(train_loader), max_epochs=10)
+        train_evaluator.run(train_loader, epoch_length=len(valid_dataset), max_epochs=1)
         metrics = train_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
@@ -248,7 +249,7 @@ def train(opt):
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
-        valid_evaluator.run(val_loader, epoch_length=1, max_epochs=10)
+        valid_evaluator.run(val_loader, max_epochs=1)
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
             "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
@@ -275,6 +276,7 @@ def train(opt):
     )
 
     trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=100)
+    tb_logger.close()
 
 
 if __name__ == "__main__":
