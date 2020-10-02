@@ -51,7 +51,7 @@ def train(opt):
         pretrained=model_configs["encoder_weights"],
     )
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
-    model = torch.nn.Sequential(preprocessing_fn, encoder, segmentation_head)
+    model = torch.nn.Sequential(encoder, segmentation_head)
     model.to(device)
 
     # Get dataloader
@@ -113,7 +113,7 @@ def train(opt):
             )
         )
 
-        trainer.run(train_loader, max_epochs=100)
+    trainer.run(train_loader, max_epochs=100)
 
 
 if __name__ == "__main__":

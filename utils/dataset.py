@@ -82,12 +82,12 @@ class RoadBoundaryDataset(Dataset):
         assert distance_map.shape[0] == 1
 
         # convert to torch tensors with CHW
-        image_torch = torch.cat([rgb, height])
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
 
         if self.transform:
-            image_torch = self.transform(image_torch)
-            targets_torch = self.transform(targets_torch)
+            rgb = self.transform(rgb)
+            # targets_torch = self.transform(targets_torch)
+        image_torch = torch.cat([rgb, height])
 
         assert targets_torch.shape[0] == 4
 
