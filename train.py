@@ -18,6 +18,7 @@ import torch.optim as optim
 from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
 from utils.modules import SegmentationHead
+from utils.modules import defined_activations
 import segmentation_models_pytorch as smp
 
 
@@ -116,7 +117,7 @@ if __name__ == "__main__":
             in_channels=4,
             encoder_depth=model_configs["encoder_depth"],
             classes=64,
-            activation=model_configs["activation"],
+            activation=defined_activations[model_configs["activation"]],
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
     model.to(device)
