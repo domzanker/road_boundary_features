@@ -215,13 +215,16 @@ def train(opt):
         log_dir="data/tensorboard/tb_logs_{}".format(opt.tag)
     )
     tb_logger.attach_output_handler(
-        trainer, tag="training", event_name=Events.ITERATION_COMPLETED, metrics="all"
+        trainer,
+        tag="training",
+        event_name=Events.ITERATION_COMPLETED,
+        metric_names="all",
     )
     tb_logger.attach_output_handler(
         valid_evaluator,
         tag="validation",
         event_name=Events.EPOCH_COMPLETED,
-        metrics_names="all",
+        metric_names="all",
         global_step_transform=tensorboard_logger.global_step_from_engine(trainer),
     )
     tb_logger.attach_opt_params_handler(
