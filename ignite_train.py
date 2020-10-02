@@ -167,7 +167,7 @@ def train(opt):
     @trainer.on((Events.ITERATION_COMPLETED(every=log_interval)))
     def log_training_loss(trainer):
         print(
-            "Epoch[{}] Loss: {:.2f}]".format(trainer.sate.epoch, trainer.state.output)
+            "Epoch[{}] Loss: {:.2f}]".format(trainer.state.epoch, trainer.state.output)
         )
 
     """
