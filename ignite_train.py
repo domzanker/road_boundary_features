@@ -247,17 +247,17 @@ def train(opt):
         predictions = predictions.detach().cpu()
         ground_trouth = out[1]
         ground_trouth = ground_trouth.detach().cpu()
-        im_1 = make_grid(predictions[:, 0:1, :, :], scale_each=True)
-        im_2 = make_grid(predictions[:, 1:2, :, :], scale_each=True)
-        im_3 = make_grid(predictions[:, 2:3, :, :], scale_each=True)
-        im_4 = make_grid(predictions[:, 3:4, :, :], scale_each=True)
+        im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
+        im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
+        im_3 = make_grid(predictions[:, 2:3, :, :], normalize=True, scale_each=True)
+        im_4 = make_grid(predictions[:, 3:4, :, :], normalize=True, scale_each=True)
 
-        t_1 = make_grid(ground_trouth[:, 0:1, :, :], scale_each=True)
-        t_2 = make_grid(ground_trouth[:, 1:2, :, :], scale_each=True)
-        t_3 = make_grid(ground_trouth[:, 2:3, :, :], scale_each=True)
-        t_4 = make_grid(ground_trouth[:, 3:4, :, :], scale_each=True)
+        t_1 = make_grid(ground_trouth[:, 0:1, :, :], normalize=True, scale_each=True)
+        t_2 = make_grid(ground_trouth[:, 1:2, :, :], normalize=True, scale_each=True)
+        t_3 = make_grid(ground_trouth[:, 2:3, :, :], normalize=True, scale_each=True)
+        t_4 = make_grid(ground_trouth[:, 3:4, :, :], normalize=True, scale_each=True)
 
-        rgb = make_grid(out[2]["input"][:, :3, :, :], scale_each=True)
+        rgb = make_grid(out[2]["input"][:, :3, :, :], normalize=True, scale_each=True)
 
         glob_step = trainer.state.epoch
 
