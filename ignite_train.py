@@ -21,6 +21,7 @@ from ignite.handlers import ModelCheckpoint
 from ignite.contrib.handlers import ProgressBar, tensorboard_logger
 
 import torch
+from torchvision.utils import make_grid
 
 from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
@@ -106,11 +107,15 @@ def train(opt):
         predictions = model(imgs)
 
         # compute loss function
-        distLoss = torch.nn.functional.mse_loss(predictions[0], targets[0])
-        endLoss = torch.nn.functional.mse_loss(predictions[1], targets[1])
+        distLoss = torch.nn.functional.mse_loss(
+            predictions[0], targets[0], reduction="mean"
+        )
+        endLoss = torch.nn.functional.mse_loss(
+            predictions[1], targets[1], reduction="mean"
+        )
         dirLoss = torch.nn.functional.cosine_similarity(
             predictions[2], targets[2]
-        ).sum()
+        ).mean()
 
         weight = 10
         combined_loss = dirLoss + weight * distLoss + weight * endLoss
@@ -234,6 +239,64 @@ def train(opt):
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
     )
 
+    @valid_evaluator.on(Events.ITERATION_COMPLETED)
+    def log_tensorboard_images(engine):
+        out = engine.state.output
+        predictions = out[0]
+        predictions = predictions.detach().cpu()
+        ground_trouth = out[1]
+        ground_trouth = ground_trouth.detach().cpu()
+        im_1 = make_grid(predictions[:, 0:1, :, :])
+        im_2 = make_grid(predictions[:, 1:2, :, :])
+        im_3 = make_grid(predictions[:, 2:3, :, :])
+        im_4 = make_grid(predictions[:, 3:4, :, :])
+
+        t_1 = make_grid(ground_trouth[:, 0:1, :, :])
+        t_2 = make_grid(ground_trouth[:, 1:2, :, :])
+        t_3 = make_grid(ground_trouth[:, 2:3, :, :])
+        t_4 = make_grid(ground_trouth[:, 3:4, :, :])
+
+        tb_logger.writer.add_image(
+            "dist_pred",
+            im_1,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "dist_gt",
+            t_1,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "end_pred",
+            im_2,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "end_gt",
+            t_2,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "dir_x_pred",
+            im_3,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "dir_x_gt",
+            t_3,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "dir_y_pred",
+            im_4,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+        tb_logger.writer.add_image(
+            "dir_y_gt",
+            t_4,
+            global_step=tensorboard_logger.global_step_from_engine(trainer),
+        )
+
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
         train_evaluator.run(train_loader, epoch_length=len(valid_dataset), max_epochs=1)
@@ -264,7 +327,7 @@ def train(opt):
 
     checkpoint_handler = ModelCheckpoint(
         dirname="data/models",
-        filename_prefix=("model_%s" % opt.tag),
+        filename_prefix=opt.tag,
         n_saved=2,
         save_as_state_dict=True,
         require_empty=False,
