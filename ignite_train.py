@@ -257,7 +257,7 @@ def train(opt):
         t_3 = make_grid(ground_trouth[:, 2:3, :, :], scale_each=True)
         t_4 = make_grid(ground_trouth[:, 3:4, :, :], scale_each=True)
 
-        rgb = make_grid(out["input"][:, :3, :, :], scale_each=True)
+        rgb = make_grid(out[2]["input"][:, :3, :, :], scale_each=True)
 
         glob_step = trainer.state.epoch
 
