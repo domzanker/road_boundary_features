@@ -239,7 +239,7 @@ def train(opt):
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
     )
 
-    @valid_evaluator.on(Events.ITERATION_COMPLETED)
+    @valid_evaluator.on(Events.EPOCH_COMPLETED)
     def log_tensorboard_images(engine):
         out = engine.state.output
         predictions = out[0]
