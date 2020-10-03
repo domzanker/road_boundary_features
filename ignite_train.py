@@ -256,46 +256,20 @@ def train(opt):
         t_3 = make_grid(ground_trouth[:, 2:3, :, :])
         t_4 = make_grid(ground_trouth[:, 3:4, :, :])
 
+        glob_step = trainer.state.epoch
+
         tb_logger.writer.add_image(
             "dist_pred",
             im_1,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
+            global_step=glob_step,
         )
-        tb_logger.writer.add_image(
-            "dist_gt",
-            t_1,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "end_pred",
-            im_2,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "end_gt",
-            t_2,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "dir_x_pred",
-            im_3,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "dir_x_gt",
-            t_3,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "dir_y_pred",
-            im_4,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
-        tb_logger.writer.add_image(
-            "dir_y_gt",
-            t_4,
-            global_step=tensorboard_logger.global_step_from_engine(trainer),
-        )
+        tb_logger.writer.add_image("dist_gt", t_1, global_step=glob_step)
+        tb_logger.writer.add_image("end_pred", im_2, global_step=glob_step)
+        tb_logger.writer.add_image("end_gt", t_2, global_step=glob_step)
+        tb_logger.writer.add_image("dir_x_pred", im_3, global_step=glob_step)
+        tb_logger.writer.add_image("dir_x_gt", t_3, global_step=glob_step)
+        tb_logger.writer.add_image("dir_y_pred", im_4, global_step=glob_step)
+        tb_logger.writer.add_image("dir_y_gt", t_4, global_step=glob_step)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
