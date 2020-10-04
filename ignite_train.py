@@ -17,7 +17,7 @@ from ignite.metrics import (
 )
 import ignite.contrib.metrics.regression as ireg
 from ignite.contrib.metrics import GpuInfo
-from ignite.handlers import ModelCheckpoint
+from ignite.handlers import Checkpoint, DiskSaver
 from ignite.contrib.handlers import ProgressBar, tensorboard_logger
 
 import torch
@@ -303,14 +303,17 @@ def train(opt):
             )
         )
 
-    checkpoint_handler = ModelCheckpoint(
-        dirname="data/models",
+    to_save = {"model": model, "optimizer": optimizer, "trainer": trainer}
+    checkpoint_handler = Checkpoint(
+        # TODO: implementation
+        to_save=to_save,
+        save_handler=DiskSaver(
+            "data/checkpoints", require_empty=False, create_dir=True
+        ),
         filename_prefix=opt.tag,
-        n_saved=2,
-        save_as_state_dict=True,
-        require_empty=False,
-        create_dir=True,
+        n_saved=5,
     )
+
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
         checkpoint_handler,
