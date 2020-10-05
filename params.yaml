@@ -9,7 +9,7 @@ train:
         batch-size: 1
         weight_decay: 0.0004
 
-        epochs: 100
+        epochs: 15
         eval-interval: 10
 
         checkpoint-interval: 10
@@ -51,6 +51,6 @@ model:
                 padding: [1,1,0],
                 dilation: 1,
                 batch_norm: True,
-                end_activation: "relu"},
+                end_activation: "sigmoid"},
         ]
                 
