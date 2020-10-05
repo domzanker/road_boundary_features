@@ -90,7 +90,6 @@ def train(opt):
         lr=configs["train"]["learning-rate"],
         weight_decay=configs["train"]["weight_decay"],
     )
-    # criterion = CombinedLoss()
 
     def train_step(engine, batch):
         model.train()
@@ -127,8 +126,8 @@ def train(opt):
         optimizer.step()
 
         kwargs = {
-            "predictions": predictions.detach(),
-            "ground_trouth": targets.detach(),
+            "predictions": [p.detach() for p in predictions],
+            "ground_trouth": [t.detach() for t in targets],
             "input": imgs.detach(),
         }
 
