@@ -261,7 +261,7 @@ def train(opt):
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
     )
 
-    @trainer.on(Events.ITERATION_COMPLETED(every=1000))
+    @trainer.on(Events.ITERATION_COMPLETED(every=100))
     def log_tensorboard_images(engine):
         out = engine.state.output
         d = out[4]
