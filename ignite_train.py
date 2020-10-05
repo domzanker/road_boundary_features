@@ -1,5 +1,6 @@
 # from models import *
 import os
+import glob
 import sys
 import time
 import datetime
@@ -315,13 +316,25 @@ def train(opt):
             "data/checkpoints", require_empty=False, create_dir=True
         ),
         filename_prefix=opt.tag,
-        n_saved=5,
+        n_saved=1,
     )
+
+    if opt.resume:
+        to_load = to_save
+        # if valid checkpoint exists (right tag)
+        if opt.checkpoint is None:
+            checkpoint_path = glob.glob(opt.tag + "*" + checkpoint_handler.ext)
+        else:
+            checkpoint_path = opt.checkpoint
+        checkpoint = torch.load(checkpoint_path)
+        checkpoint_handler.load_objects(to_load, checkpoint)
+        progress_bar.log_message(
+            "resumed training from checkpoint: %s" % checkpoint_path
+        )
 
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
         checkpoint_handler,
-        {"model": model},
     )
 
     trainer.run(train_loader, max_epochs=configs["train"]["epochs"])
@@ -337,6 +350,8 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
     parser.add_argument("--tag", type=str, default="training", help="")
+    parser.add_argument("--resume", type=bool, default=False, help="")
+    parser.add_argument("--checkpoint", type=str, default=None, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
