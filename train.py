@@ -20,6 +20,7 @@ import ignite.contrib.metrics.regression as ireg
 from ignite.contrib.metrics import GpuInfo
 from ignite.handlers import Checkpoint, DiskSaver
 from ignite.contrib.handlers import ProgressBar, tensorboard_logger
+from ignite.utils import setup_logger
 
 import torch
 from torchvision.utils import make_grid
@@ -166,13 +167,13 @@ def train(opt):
         combined_loss = dirLoss + weight * distLoss + weight * endLoss
 
         kwargs = {
-            "input": imgs,
-            "dist_pred": predictions[0],
-            "end_pred": predictions[1],
-            "dir_pred": predictions[2],
-            "dist": dist_t,
-            "end": end_t,
-            "dir": dir_t,
+            "input": imgs.detach(),
+            "dist_pred": predictions[0].detach(),
+            "end_pred": predictions[1].detach(),
+            "dir_pred": predictions[2].detach(),
+            "dist": dist_t.detach(),
+            "end": end_t.detach(),
+            "dir": dir_t.detach(),
             "loss": combined_loss.item(),
             "dist_loss": distLoss.item(),
             "end_loss": endLoss.item(),
@@ -247,6 +248,7 @@ def train(opt):
         tag="validation",
         event_name=Events.EPOCH_COMPLETED,
         metric_names="all",
+        global_step_transform=tensorboard_logger.global_step_from_engine(trainer),
     )
     tb_logger.attach_opt_params_handler(
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
@@ -257,9 +259,10 @@ def train(opt):
         out = engine.state.output
         d = out[4]
         predictions = torch.cat(d["predictions"], dim=1)
-        predictions = predictions.detach().cpu()
+        predictions = predictions.cpu()
         ground_trouth = torch.cat(d["ground_trouth"], dim=1)
-        ground_trouth = ground_trouth.detach().cpu()
+        ground_trouth = ground_trouth.cpu()
+        inp = d["input"].cpu()
         im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
         im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
         im_3 = make_grid(predictions[:, 2:3, :, :], normalize=True, scale_each=True)
@@ -270,7 +273,7 @@ def train(opt):
         t_3 = make_grid(ground_trouth[:, 2:3, :, :], normalize=True, scale_each=True)
         t_4 = make_grid(ground_trouth[:, 3:4, :, :], normalize=True, scale_each=True)
 
-        rgb = make_grid(d["input"][:, :3, :, :], normalize=True, scale_each=True)
+        rgb = make_grid(inp[:, :3, :, :], normalize=True, scale_each=True)
 
         glob_step = trainer.state.epoch
 
