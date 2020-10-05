@@ -126,7 +126,11 @@ def train(opt):
 
         optimizer.step()
 
-        kwargs = {"predictions": predictions, "ground_trouth": targets, "input": imgs}
+        kwargs = {
+            "predictions": predictions.detach(),
+            "ground_trouth": targets.detach(),
+            "input": imgs.detach(),
+        }
 
         return (
             combined_loss.item(),
