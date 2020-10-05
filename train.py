@@ -239,7 +239,6 @@ def train(opt):
         tag="validation",
         event_name=Events.EPOCH_COMPLETED,
         metric_names="all",
-        global_step_transform=tensorboard_logger.global_step_from_engine(trainer),
     )
     tb_logger.attach_opt_params_handler(
         trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
