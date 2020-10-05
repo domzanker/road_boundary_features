@@ -6,7 +6,7 @@ dataset:
 
 train:
         learning-rate: 0.001
-        batch-size: 1
+        batch-size: 2
         weight_decay: 0.0004
 
         epochs: 15
