@@ -125,7 +125,15 @@ def train(opt):
 
         optimizer.step()
 
-        return combined_loss.item(), distLoss.item(), endLoss.item(), dirLoss.item()
+        kwargs = {"predictions": predictions, "ground_trouth": targets, "input": imgs}
+
+        return (
+            combined_loss.item(),
+            distLoss.item(),
+            endLoss.item(),
+            dirLoss.item(),
+            kwargs,
+        )
 
     def valid_step(engine, batch):
         model.eval()
@@ -247,9 +255,10 @@ def train(opt):
     @trainer.on(Events.ITERATION_COMPLETED(every=1000))
     def log_tensorboard_images(engine):
         out = engine.state.output
-        predictions = out[0]
+        d = out[4]
+        predictions = torch.cat(d["predictions"], dim=1)
         predictions = predictions.detach().cpu()
-        ground_trouth = out[1]
+        ground_trouth = torch.cat(d["ground_trouth"], dim=1)
         ground_trouth = ground_trouth.detach().cpu()
         im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
         im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
@@ -261,7 +270,7 @@ def train(opt):
         t_3 = make_grid(ground_trouth[:, 2:3, :, :], normalize=True, scale_each=True)
         t_4 = make_grid(ground_trouth[:, 3:4, :, :], normalize=True, scale_each=True)
 
-        rgb = make_grid(out[2]["input"][:, :3, :, :], normalize=True, scale_each=True)
+        rgb = make_grid(d["input"][:, :3, :, :], normalize=True, scale_each=True)
 
         glob_step = trainer.state.epoch
 
