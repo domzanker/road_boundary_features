@@ -108,14 +108,14 @@ def train(opt):
 
         # compute loss function
         distLoss = torch.nn.functional.mse_loss(
-            predictions[0], targets[0], reduction="mean"
+            predictions[0], targets[0], reduction="sum"
         )
         endLoss = torch.nn.functional.mse_loss(
-            predictions[1], targets[1], reduction="mean"
+            predictions[1], targets[1], reduction="sum"
         )
         dirLoss = torch.nn.functional.cosine_similarity(
             predictions[2], targets[2]
-        ).mean()
+        ).sum()
 
         weight = 10
         combined_loss = dirLoss + weight * distLoss + weight * endLoss
@@ -143,8 +143,12 @@ def train(opt):
         predictions = model(imgs)
 
         # compute loss function
-        distLoss = torch.nn.functional.mse_loss(predictions[0], targets[0])
-        endLoss = torch.nn.functional.mse_loss(predictions[1], targets[1])
+        distLoss = torch.nn.functional.mse_loss(
+            predictions[0], targets[0], reduction="sum"
+        )
+        endLoss = torch.nn.functional.mse_loss(
+            predictions[1], targets[1], reduction="sum"
+        )
         dirLoss = torch.nn.functional.cosine_similarity(
             predictions[2], targets[2]
         ).sum()
