@@ -180,7 +180,11 @@ def train(opt):
             "dir_loss": dirLoss.item(),
         }
 
-        return torch.cat(predictions, dim=1), torch.cat(targets, dim=1), kwargs
+        return (
+            torch.cat(predictions, dim=1).detach(),
+            torch.cat(targets, dim=1).detach(),
+            kwargs,
+        )
 
     # define ignite objects
     trainer = Engine(train_step)
