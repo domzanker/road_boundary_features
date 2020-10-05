@@ -316,14 +316,18 @@ def train(opt):
             "data/checkpoints", require_empty=False, create_dir=True
         ),
         filename_prefix=opt.tag,
-        n_saved=1,
+        n_saved=5,
     )
 
     if opt.resume:
         to_load = to_save
         # if valid checkpoint exists (right tag)
         if opt.checkpoint is None:
-            checkpoint_path = glob.glob(opt.tag + "*" + checkpoint_handler.ext)
+            checkpoint_path = sorted(
+                glob.glob("data/checkpoints/%s*%s" % (opt.tag, checkpoint_handler.ext)),
+                reverse=True,
+            )
+            checkpoint_path = checkpoint_path[0]
         else:
             checkpoint_path = opt.checkpoint
         checkpoint = torch.load(checkpoint_path)
