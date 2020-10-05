@@ -19,10 +19,11 @@ from ignite.metrics import (
 import ignite.contrib.metrics.regression as ireg
 from ignite.contrib.metrics import GpuInfo
 from ignite.handlers import Checkpoint, DiskSaver
-from ignite.contrib.handlers import ProgressBar, tensorboard_logger
+from ignite.contrib.handlers import ProgressBar, tensorboard_logger, LRScheduler
 from ignite.utils import setup_logger
 
 import torch
+from torch.optim.lr_scheduler import StepLR
 from torchvision.utils import make_grid
 
 from utils.dataset import RoadBoundaryDataset
@@ -194,6 +195,11 @@ def train(opt):
     train_evaluator = Engine(valid_step)
     valid_evaluator = Engine(valid_step)
 
+    # setup learning rate scheduler
+    step_scheduler = StepLR(optimizer, step_size=1, gamma=configs["train"]["lr-decay"])
+    scheduler = LRScheduler(step_scheduler)
+    trainer.add_event_handler(Events.EPOCH_COMPLETED, scheduler)
+
     # evaluator = Engine(valid_step)
     # define progress bar
     progress_bar = ProgressBar(persist=True)
@@ -242,8 +248,9 @@ def train(opt):
     )
 
     tb_logger = tensorboard_logger.TensorboardLogger(
-        log_dir="data/tensorboard/tb_logs_{}".format(opt.tag)
+        log_dir="data/tensorboard/tb_logs_{}".format(opt.tag),
     )
+
     tb_logger.attach_output_handler(
         trainer,
         tag="training",
@@ -337,22 +344,35 @@ def train(opt):
         n_saved=5,
     )
 
-    if opt.resume:
-        to_load = to_save
-        # if valid checkpoint exists (right tag)
-        if opt.checkpoint is None:
-            checkpoint_path = sorted(
-                glob.glob("data/checkpoints/%s*%s" % (opt.tag, checkpoint_handler.ext)),
-                reverse=True,
+    def load_checkpoint():
+
+        if opt.resume:
+            to_load = to_save
+            # if valid checkpoint exists (right tag)
+            if opt.checkpoint is None:
+                checkpoint_path = sorted(
+                    glob.glob(
+                        "data/checkpoints/%s*%s" % (opt.tag, checkpoint_handler.ext)
+                    ),
+                    reverse=True,
+                )
+                if len(checkpoint_path) > 0:
+                    checkpoint_path = checkpoint_path[0]
+                else:
+                    progress_bar.log_message(
+                        "no checkpoint found. starting from scratch"
+                    )
+                    return
+
+            else:
+                checkpoint_path = opt.checkpoint
+            checkpoint = torch.load(checkpoint_path)
+            checkpoint_handler.load_objects(to_load, checkpoint)
+            progress_bar.log_message(
+                "resumed training from checkpoint: %s" % checkpoint_path
             )
-            checkpoint_path = checkpoint_path[0]
-        else:
-            checkpoint_path = opt.checkpoint
-        checkpoint = torch.load(checkpoint_path)
-        checkpoint_handler.load_objects(to_load, checkpoint)
-        progress_bar.log_message(
-            "resumed training from checkpoint: %s" % checkpoint_path
-        )
+
+    load_checkpoint()
 
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
