@@ -1,5 +1,6 @@
 # from models import *
 import os
+import glob
 import sys
 import time
 import datetime
@@ -7,16 +8,21 @@ import argparse
 import yaml
 from pathlib import Path
 
-import pkbar
-from math import ceil
+from ignite.engine import Events, Engine
+from ignite.metrics import (
+    Accuracy,
+    RunningAverage,
+    Average,
+    MeanPairwiseDistance,
+    MeanSquaredError,
+)
+import ignite.contrib.metrics.regression as ireg
+from ignite.contrib.metrics import GpuInfo
+from ignite.handlers import Checkpoint, DiskSaver
+from ignite.contrib.handlers import ProgressBar, tensorboard_logger
 
 import torch
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-from torchvision import datasets
-from torchvision import transforms
-from torch.autograd import Variable
-import torch.optim as optim
+from torchvision.utils import make_grid
 
 from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
@@ -25,91 +31,13 @@ from utils.modules import defined_activations
 import segmentation_models_pytorch as smp
 
 
-class Params:
-    def __init__(self, config_dict: dict = None, file: Path = None):
-
-        if file is not None:
-            file = Path(file)
-            assert file.suffix == ".yaml"
-            with file.open(mode="rb") as f:
-                config_dict = yaml.safe_load(f)
-
-        for key, val in config_dict.items():
-            if isinstance(val, dict):
-                self.__dict__[key] = Params(config_dict=val)
-            else:
-                self.__dict__[key] = val
-
-    def __str__(self):
-        string, _ = self.__build_str__()
-        return "\n".join(string)
-
-    def __build_str__(self, string: str = [], parents: list = []):
-        for key, val in self.__dict__.items():
-            loc_parents = parents.copy()
-            loc_parents.append(key)
-
-            if isinstance(val, Params):
-                string, loc_parents = val.__build_str__(
-                    string=string, parents=loc_parents
-                )
-            else:
-                s = ".".join(loc_parents)
-                s += ": %s" % val
-                string.append(s)
-        return (string, parents)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=100, help="number of epochs")
-    parser.add_argument(
-        "--learning_rate", type=float, default=1e-4, help="number of epochs"
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=8, help="size of each image batch"
-    )
-    parser.add_argument(
-        "--cpu_workers", type=int, default=4, help="number of cpu threads for loading"
-    )
-    parser.add_argument("--gpu", type=int, default=0, help="gpu")
-    parser.add_argument("--checkpoint_interval", type=int, default=10, help="")
-    parser.add_argument("--configs", type=str, default="params.yaml", help="")
-
-    parser.add_argument("--tag", type=str, default="training", help="")
-
-    opt = parser.parse_args()
-    print(opt)
-
+def train(opt):
     configs_file = Path(opt.configs)
     with configs_file.open("rb") as f:
         configs = yaml.safe_load(f)
 
     # define device (if available)
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
-
-    outpath = Path("data/outputs/%s" % opt.tag)
-    outpath.mkdir(parents=True, exist_ok=True)
-
-    model_path = Path("data/models")
-    model_path.mkdir(parents=True, exist_ok=True)
-
-    tb_writer = SummaryWriter(str(outpath / "log"))
-
-    # Get dataloader
-    train_dataset = RoadBoundaryDataset(path=Path(configs["dataset"]["train-dataset"]))
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=configs["train"]["batch-size"],
-        shuffle=True,
-        num_workers=opt.cpu_workers,
-        pin_memory=True,
-    )
-
-    valid_dataset = RoadBoundaryDataset(path=Path(configs["dataset"]["test-dataset"]))
-    valid_loader = torch.utils.data.DataLoader(
-        valid_dataset, batch_size=1, shuffle=False, num_workers=2
-    )
 
     # Initiate model
     model_configs = configs["model"]
@@ -124,125 +52,308 @@ if __name__ == "__main__":
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
 
+    """
     preprocessing_fn = smp.encoders.get_preprocessing_fn(
         encoder_name=model_configs["encoder"],
         pretrained=model_configs["encoder_weights"],
     )
-
+    """
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
-
     model = torch.nn.Sequential(encoder, segmentation_head)
     model.to(device)
 
-    loss = CombinedLoss()
+    # Get dataloader
+    train_dataset = RoadBoundaryDataset(
+        path=Path(configs["dataset"]["train-dataset"]),
+        image_size=configs["dataset"]["size"],
+        # transform=preprocessing_fn,
+    )
+    valid_dataset = RoadBoundaryDataset(
+        path=Path(configs["dataset"]["valid-dataset"]),
+        image_size=configs["dataset"]["size"],
+        # transform=preprocessing_fn,
+    )
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=configs["train"]["batch-size"],
+        shuffle=True,
+        num_workers=opt.cpu_workers,
+        pin_memory=True,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        valid_dataset, batch_size=1, shuffle=False, num_workers=2
+    )
 
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=configs["train"]["learning-rate"],
         weight_decay=configs["train"]["weight_decay"],
     )
+    # criterion = CombinedLoss()
 
-    num_epochs = configs["train"]["epochs"]
-    train_per_epoch = int(ceil(len(train_loader) / configs["train"]["batch-size"]))
+    def train_step(engine, batch):
+        model.train()
 
-    for epoch in range(num_epochs):
+        imgs, targets = batch
+        imgs = imgs.to(device)
 
-        # define progress bar
-        bar = pkbar.Kbar(
-            target=train_per_epoch,
-            epoch=epoch,
-            num_epochs=num_epochs,
-            stateful_metrics=["ETA"],
+        targets = targets.to(device)
+        dist_t = targets[:, 0:1, :, :]
+        end_t = targets[:, 1:2, :, :]
+        dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t, end_t, dir_t]
+
+        model.zero_grad()
+
+        predictions = model(imgs)
+
+        # compute loss function
+        distLoss = torch.nn.functional.mse_loss(
+            predictions[0], targets[0], reduction="sum"
+        )
+        endLoss = torch.nn.functional.mse_loss(
+            predictions[1], targets[1], reduction="sum"
+        )
+        dirLoss = torch.nn.functional.cosine_similarity(
+            predictions[2], targets[2]
+        ).sum()
+
+        weight = 10
+        combined_loss = dirLoss + weight * distLoss + weight * endLoss
+
+        combined_loss.backward()
+
+        optimizer.step()
+
+        return combined_loss.item(), distLoss.item(), endLoss.item(), dirLoss.item()
+
+    def valid_step(engine, batch):
+        model.eval()
+
+        imgs, targets = batch
+        imgs = imgs.to(device)
+
+        targets = targets.to(device)
+        dist_t = targets[:, 0:1, :, :]
+        end_t = targets[:, 1:2, :, :]
+        dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t, end_t, dir_t]
+
+        model.zero_grad()
+
+        predictions = model(imgs)
+
+        # compute loss function
+        distLoss = torch.nn.functional.mse_loss(
+            predictions[0], targets[0], reduction="sum"
+        )
+        endLoss = torch.nn.functional.mse_loss(
+            predictions[1], targets[1], reduction="sum"
+        )
+        dirLoss = torch.nn.functional.cosine_similarity(
+            predictions[2], targets[2]
+        ).sum()
+
+        weight = 10
+        combined_loss = dirLoss + weight * distLoss + weight * endLoss
+
+        kwargs = {
+            "input": imgs,
+            "dist_pred": predictions[0],
+            "end_pred": predictions[1],
+            "dir_pred": predictions[2],
+            "dist": dist_t,
+            "end": end_t,
+            "dir": dir_t,
+            "loss": combined_loss.item(),
+            "dist_loss": distLoss.item(),
+            "end_loss": endLoss.item(),
+            "dir_loss": dirLoss.item(),
+        }
+
+        return torch.cat(predictions, dim=1), torch.cat(targets, dim=1), kwargs
+
+    # define ignite objects
+    trainer = Engine(train_step)
+    train_evaluator = Engine(valid_step)
+    valid_evaluator = Engine(valid_step)
+
+    # evaluator = Engine(valid_step)
+    # define progress bar
+    progress_bar = ProgressBar(persist=True)
+    valid_bar = ProgressBar()
+    valid_bar.attach(train_evaluator)
+    valid_bar.attach(valid_evaluator)
+
+    RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
+    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
+    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
+    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
+    GpuInfo().attach(trainer, name="gpu")
+    progress_bar.attach(
+        trainer,
+        metric_names=[
+            "loss",
+            "gpu:{} mem(%)".format(opt.gpu),
+            "gpu:{} util(%)".format(opt.gpu),
+        ],
+    )
+
+    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+        train_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        train_evaluator, name="l_dist"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        train_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        train_evaluator, name="l_dir"
+    )
+
+    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+        valid_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        valid_evaluator, name="l_dist"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        valid_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        valid_evaluator, name="l_dir"
+    )
+
+    tb_logger = tensorboard_logger.TensorboardLogger(
+        log_dir="data/tensorboard/tb_logs_{}".format(opt.tag)
+    )
+    tb_logger.attach_output_handler(
+        trainer,
+        tag="training",
+        event_name=Events.ITERATION_COMPLETED,
+        metric_names="all",
+    )
+    tb_logger.attach_output_handler(
+        valid_evaluator,
+        tag="validation",
+        event_name=Events.EPOCH_COMPLETED,
+        metric_names="all",
+        global_step_transform=tensorboard_logger.global_step_from_engine(trainer),
+    )
+    tb_logger.attach_opt_params_handler(
+        trainer, event_name=Events.ITERATION_STARTED, optimizer=optimizer
+    )
+
+    @trainer.on(Events.ITERATION_COMPLETED(every=1000))
+    def log_tensorboard_images(engine):
+        out = engine.state.output
+        predictions = out[0]
+        predictions = predictions.detach().cpu()
+        ground_trouth = out[1]
+        ground_trouth = ground_trouth.detach().cpu()
+        im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
+        im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
+        im_3 = make_grid(predictions[:, 2:3, :, :], normalize=True, scale_each=True)
+        im_4 = make_grid(predictions[:, 3:4, :, :], normalize=True, scale_each=True)
+
+        t_1 = make_grid(ground_trouth[:, 0:1, :, :], normalize=True, scale_each=True)
+        t_2 = make_grid(ground_trouth[:, 1:2, :, :], normalize=True, scale_each=True)
+        t_3 = make_grid(ground_trouth[:, 2:3, :, :], normalize=True, scale_each=True)
+        t_4 = make_grid(ground_trouth[:, 3:4, :, :], normalize=True, scale_each=True)
+
+        rgb = make_grid(out[2]["input"][:, :3, :, :], normalize=True, scale_each=True)
+
+        glob_step = trainer.state.epoch
+
+        tb_logger.writer.add_image(
+            "dist_pred",
+            im_1,
+            global_step=glob_step,
+        )
+        tb_logger.writer.add_image("dist_gt", t_1, global_step=glob_step)
+        tb_logger.writer.add_image("end_pred", im_2, global_step=glob_step)
+        tb_logger.writer.add_image("end_gt", t_2, global_step=glob_step)
+        tb_logger.writer.add_image("dir_x_pred", im_3, global_step=glob_step)
+        tb_logger.writer.add_image("dir_x_gt", t_3, global_step=glob_step)
+        tb_logger.writer.add_image("dir_y_pred", im_4, global_step=glob_step)
+        tb_logger.writer.add_image("dir_y_gt", t_4, global_step=glob_step)
+        tb_logger.writer.add_image("rgb", rgb, global_step=glob_step)
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_training_results(engine):
+        train_evaluator.run(train_loader, epoch_length=150, max_epochs=1)
+        metrics = train_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
+            )
         )
 
-        model.train()
-        start_time = time.time()
-        for batch_i, (imgs, targets) in enumerate(train_loader):
-
-            batches_done = len(train_loader) * epoch + batch_i
-
-            imgs = Variable(imgs.to(device))
-            targets = Variable(targets.to(device), requires_grad=False)
-
-            label_distance = targets[:, 0:1, :, :]
-            label_end = targets[:, 1:2, :, :]
-            label_direction = targets[:, 2:4, :, :]
-
-            tb_writer.add_images("label_distance", label_distance, batches_done)
-            # tb_writer.add_images("label_direction", label_direction, batches_done)
-            tb_writer.add_images("label_end", label_end, batches_done)
-
-            (feature_distance, feature_end, feature_direction) = model(imgs)
-
-            # tb_writer.add_images("feature_direction", feature_direction, batches_done)
-            tb_writer.add_images("feature_distance", feature_distance, batches_done)
-            tb_writer.add_images("feature_end", feature_end, batches_done)
-
-            # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
-            lo = loss(
-                distance=(feature_distance, label_distance),
-                end_points=(feature_end, label_end),
-                direction=(feature_direction, label_direction),
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_validation_results(engine):
+        valid_evaluator.run(val_loader, epoch_length=150, max_epochs=1)
+        metrics = valid_evaluator.state.metrics
+        progress_bar.log_message(
+            "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
             )
+        )
 
-            tb_writer.add_scalar("loss", lo, batches_done)
+    to_save = {"model": model, "optimizer": optimizer, "trainer": trainer}
+    checkpoint_handler = Checkpoint(
+        # TODO: implementation
+        to_save=to_save,
+        save_handler=DiskSaver(
+            "data/checkpoints", require_empty=False, create_dir=True
+        ),
+        filename_prefix=opt.tag,
+        n_saved=1,
+    )
 
-            lo.backward()
+    if opt.resume:
+        to_load = to_save
+        # if valid checkpoint exists (right tag)
+        if opt.checkpoint is None:
+            checkpoint_path = glob.glob(opt.tag + "*" + checkpoint_handler.ext)
+        else:
+            checkpoint_path = opt.checkpoint
+        checkpoint = torch.load(checkpoint_path)
+        checkpoint_handler.load_objects(to_load, checkpoint)
+        progress_bar.log_message(
+            "resumed training from checkpoint: %s" % checkpoint_path
+        )
 
-            optimizer.step()
-            optimizer.zero_grad()
+    trainer.add_event_handler(
+        Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
+        checkpoint_handler,
+    )
 
-            # ----------------
-            #   Log progress
-            # ----------------
+    trainer.run(train_loader, max_epochs=configs["train"]["epochs"])
+    # trainer.run(train_loader, max_epochs=configs["train"]["epochs"], epoch_length=1)
+    tb_logger.close()
 
-            """
-            log_str = "\n>>>> [Epoch %d/%d, Batch %d/%d] <<<< \n" % (
-                epoch,
-                num_epochs,
-                batch_i,
-                len(train_loader),
-            )
-            """
 
-            # Determine approximate time left for epoch
-            epoch_batches_left = len(train_loader) - (batch_i + 1)
-            time_left = datetime.timedelta(
-                seconds=epoch_batches_left * (time.time() - start_time) / (batch_i + 1)
-            )
-            # log_str += f"\n>>>> ETA {time_left}"
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--cpu_workers", type=int, default=4, help="number of cpu threads for loading"
+    )
+    parser.add_argument("--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("--configs", type=str, default="params.yaml", help="")
+    parser.add_argument("--tag", type=str, default="training", help="")
+    parser.add_argument("--resume", type=bool, default=False, help="")
+    parser.add_argument("--checkpoint", type=str, default=None, help="")
+    # FIXME resume training
 
-            bar.update(
-                batch_i, values=[("ETA", time_left.total_seconds()), ("train_loss", lo)]
-            )
+    opt = parser.parse_args()
 
-            tb_writer.flush()
-
-        if epoch % configs["train"]["eval-interval"] == 0 and epoch > 0:
-            model.eval()
-            with torch.no_grad():
-                # FIXME
-                for imgs, targets in valid_loader:
-                    imgs = Variable(imgs.to(device))
-                    targets = Variable(targets.to(device), requires_grad=False)
-
-                    label_distance = targets[:, 0, :, :]
-                    label_end = targets[:, 1, :, :]
-                    label_direction = targets[:, 2:4, :, :]
-
-                    (feature_distance, feature_end, feature_direction) = model(imgs)
-
-                    # L(S,E,D) = l_det(S) + k1 * l_end(E) + k2 * l_dir(D)
-                    lo = loss(
-                        distance=(feature_distance, label_distance),
-                        end_points=(feature_end, label_end),
-                        direction=(feature_direction, label_direction),
-                    )
-                    # print("Loss on test set: %s" % lo)
-                    bar.add(1, values=[("val_loss", lo)])
-
-        if epoch % configs["train"]["checkpoint-interval"] == 0:
-            torch.save(
-                model.state_dict(),
-                str(model_path / ("model_%s_%d.pth" % (opt.tag, epoch))),
-            )
+    train(opt)
