@@ -10,9 +10,8 @@ train:
         weight_decay: 0.0004
 
         epochs: 15
-        eval-interval: 10
 
-        checkpoint-interval: 10
+        checkpoint-interval: 1
 
 model:
         use_custom_encoder: false
