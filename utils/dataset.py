@@ -85,7 +85,8 @@ class RoadBoundaryDataset(Dataset):
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
 
         if self.transform:
-            rgb = self.transform(rgb)
+            rgb = self.transform(torch.squeeze(rgb))
+            rgb = torch.unsqueeze(rgb, dim=0)
             # targets_torch = self.transform(targets_torch)
         image_torch = torch.cat([rgb, height])
 

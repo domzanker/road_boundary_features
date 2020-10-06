@@ -67,12 +67,12 @@ def train(opt):
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
-        # transform=preprocessing_fn,
+        transform=preprocessing_fn,
     )
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
-        # transform=preprocessing_fn,
+        transform=preprocessing_fn,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -95,7 +95,6 @@ def train(opt):
         model.train()
 
         imgs, targets = batch
-        imgs = preprocessing_fn(imgs)
         imgs = imgs.to(device)
 
         targets = targets.to(device)
@@ -144,7 +143,6 @@ def train(opt):
         model.eval()
 
         imgs, targets = batch
-        imgs = preprocessing_fn(imgs)
         imgs = imgs.to(device)
 
         targets = targets.to(device)
