@@ -17,7 +17,8 @@ train:
 model:
         use_custom_encoder: false
         encoder: "resnet18"
-        encoder_weights: "imagenet"
+        encoder_weights: null
+        #encoder_weights: "imagenet"
         encoder_depth: 2
         activation: "sigmoid"
         decoder_use_batchnorm: true

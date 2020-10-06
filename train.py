@@ -54,10 +54,13 @@ def train(opt):
             decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
         )
 
-    preprocessing_fn = smp.encoders.get_preprocessing_fn(
-        encoder_name=model_configs["encoder"],
-        pretrained=model_configs["encoder_weights"],
-    )
+    if model_configs["encoder_weights"] is not None:
+        preprocessing_fn = smp.encoders.get_preprocessing_fn(
+            encoder_name=model_configs["encoder"],
+            pretrained=model_configs["encoder_weights"],
+        )
+    else:
+        preprocessing_fn = None
 
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
     model = torch.nn.Sequential(encoder, segmentation_head)

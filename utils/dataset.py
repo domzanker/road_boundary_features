@@ -35,6 +35,25 @@ class RoadBoundaryDataset(Dataset):
     def __len__(self):
         return len(self.index)
 
+    def _preproc(x, mean=None, std=None, input_space="RGB", input_range=None, **kwargs):
+
+        if input_space == "BGR":
+            x = x[..., ::-1].copy()
+
+        if input_range is not None:
+            if x.max() > 1 and input_range[1] == 1:
+                x = x / 255.0
+
+        if mean is not None:
+            mean = torch.Tensor(mean)
+            x = x - mean
+
+        if std is not None:
+            std = torch.Tensor(std)
+            x = x / std
+
+        return x
+
     def __getitem__(self, indx: int):
 
         sample_file = self.index[indx]
@@ -85,9 +104,7 @@ class RoadBoundaryDataset(Dataset):
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
 
         if self.transform:
-            rgb = vision_transforms.functional.to_pil_image(rgb)
-            rgb = self.transform(rgb)
-            rgb = vision_transforms.functional.to_tensor(rgb)
+            rgb = self._preproc(rgb, **self.transform)
             # targets_torch = self.transform(targets_torch)
         image_torch = torch.cat([rgb, height])
 
