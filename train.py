@@ -55,12 +55,12 @@ def train(opt):
         )
 
     if model_configs["encoder_weights"] is not None:
-        preprocessing_fn = smp.encoders.get_preprocessing_fn(
+        preprocessing_params = smp.encoders.get_preprocessing_params(
             encoder_name=model_configs["encoder"],
             pretrained=model_configs["encoder_weights"],
         )
     else:
-        preprocessing_fn = None
+        preprocessing_params = None
 
     segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
     model = torch.nn.Sequential(encoder, segmentation_head)
@@ -70,12 +70,12 @@ def train(opt):
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=preprocessing_fn,
+        transform=preprocessing_params,
     )
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=preprocessing_fn,
+        transform=preprocessing_params,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
