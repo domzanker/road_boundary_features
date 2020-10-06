@@ -24,7 +24,7 @@ class RoadBoundaryDataset(Dataset):
 
         assert path.is_dir()
 
-        self.path = path
+        self.path = path.resolve()
         self.index = []
         for entry in self.path.iterdir():
             if entry.suffix == suffix:
