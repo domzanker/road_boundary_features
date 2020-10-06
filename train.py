@@ -389,7 +389,7 @@ def train(opt):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--cpu_workers", type=int, default=4, help="number of cpu threads for loading"
+        "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
     )
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
