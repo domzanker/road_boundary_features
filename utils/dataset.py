@@ -8,6 +8,8 @@ from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_tensor
 import torchvision.transforms as vision_transforms
 
+from functools import partial
+
 
 class RoadBoundaryDataset(Dataset):
     def __init__(
@@ -104,7 +106,8 @@ class RoadBoundaryDataset(Dataset):
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
 
         if self.transform:
-            rgb = self._preproc(rgb, **self.transform)
+            transformation = partial(self._preproc, self.transform)
+            rgb = transformation(rgb)
             # targets_torch = self.transform(targets_torch)
         image_torch = torch.cat([rgb, height])
 
