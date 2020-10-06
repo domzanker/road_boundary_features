@@ -29,7 +29,11 @@ class RoadBoundaryDataset(Dataset):
         for entry in self.path.iterdir():
             if entry.suffix == suffix:
                 self.index.append(entry)
-        self.transform = transform
+
+        if transform is not None:
+            self.transform = partial(self._preproc, **transform)
+        else:
+            self.transform = None
 
         self.image_size = image_size
         super().__init__()
@@ -37,22 +41,23 @@ class RoadBoundaryDataset(Dataset):
     def __len__(self):
         return len(self.index)
 
-    def _preproc(x, mean=None, std=None, input_space="RGB", input_range=None, **kwargs):
+    def _preproc(
+        self, x, mean=None, std=None, input_space="RGB", input_range=None, **kwargs
+    ):
 
         if input_space == "BGR":
             x = x[..., ::-1].copy()
 
         if input_range is not None:
             if x.max() > 1 and input_range[1] == 1:
-                x = x / 255.0
+                x = x / x.max()
 
-        if mean is not None:
-            mean = torch.Tensor(mean)
-            x = x - mean
+        if mean is None:
+            mean = 0
+        if std is None:
+            std = 0
 
-        if std is not None:
-            std = torch.Tensor(std)
-            x = x / std
+        x = vision_transforms.functional.normalize(x, mean, std)
 
         return x
 
@@ -106,9 +111,8 @@ class RoadBoundaryDataset(Dataset):
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
 
         if self.transform:
-            transformation = partial(self._preproc, self.transform)
-            rgb = transformation(rgb)
-            # targets_torch = self.transform(targets_torch)
+            rgb = self.transform(rgb)
+
         image_torch = torch.cat([rgb, height])
 
         assert targets_torch.shape[0] == 4
