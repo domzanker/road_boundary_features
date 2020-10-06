@@ -10,6 +10,8 @@ import torchvision.transforms as vision_transforms
 
 from functools import partial
 
+from time import sleep
+
 
 class RoadBoundaryDataset(Dataset):
     def __init__(
@@ -64,6 +66,9 @@ class RoadBoundaryDataset(Dataset):
     def __getitem__(self, indx: int):
 
         sample_file = self.index[indx]
+
+        if not sample_file.is_file():
+            sleep(1.0)
 
         with sample_file.open("rb") as f:
             complete_sample = pickle.load(f)
