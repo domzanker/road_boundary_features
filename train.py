@@ -292,7 +292,7 @@ def train(opt):
 
         rgb = make_grid(inp[:, :3, :, :], normalize=True, scale_each=True)
 
-        glob_step = trainer.state.iteration
+        glob_step = trainer.state.iteration * trainer.state.epoch
 
         tb_logger.writer.add_image(
             "dist_pred",
