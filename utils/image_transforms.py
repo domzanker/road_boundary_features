@@ -5,7 +5,7 @@ import torch
 
 def angle_map(vector_map):
     vector_map = vector_map.numpy()
-    angles_ = np.arctan2(vector_map[:, 0, :, :], vector_map[:, 1, :, :])
+    angles_ = np.arctan2(vector_map[:, 0:1, :, :], vector_map[:, 1:2, :, :])
     angles_ = (angles_ + np.pi) / (2 * np.pi) * 255
     angles_ = angles_.astype(np.uint8)
     angles_ = np.transpose(angles_, (0, 2, 3, 1))
@@ -16,3 +16,8 @@ def angle_map(vector_map):
     batch = np.stack(batch, axis=0)
     batch = np.transpose(batch, (0, 3, 1, 2))
     return torch.Tensor(batch)
+
+
+if __name__ == "__main__":
+    ba = torch.rand(10, 2, 500, 700)
+    a = angle_map(ba)
