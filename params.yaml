@@ -16,6 +16,7 @@ train:
         checkpoint-interval: 1
 
 model:
+        encoder_decoder_name: "linknet"
         encoder_decoder:
                 encoder_name: "resnet18"
                 encoder_weights: null

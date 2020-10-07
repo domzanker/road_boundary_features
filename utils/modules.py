@@ -19,7 +19,7 @@ class FeatureExtrationNet(torch.nn.Module):
     def __init__(self, model_configs: Dict[str, Any]):
         super(FeatureExtrationNet, self).__init__()
 
-        self.encoder_decoder = smp_models[model_configs["model"]](
+        self.encoder_decoder = smp_models[model_configs["encoder_decoder_name"]](
             **model_configs["encoder_decoder"]
         )
         if model_configs["encoder_decoder"]["encoder_weights"]:
