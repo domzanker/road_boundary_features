@@ -27,36 +27,16 @@ model:
                 activation: "sigmoid"
                 decoder_use_batchnorm: true
 
-        head: [
+        head: 
                 branches:
-                        {
-                        in_channels: [64, 8, 8],
-                        out_channels: [8, 8, 1],
-                        kernel_sizes: [3, 3, 1],
-                        strides: 1,
-                        padding: [1,1,0],
-                        dilation: 1,
-                        batch_norm: True,
-                        end_activation: "relu"},
-
-                        {
-                        in_channels: [64, 8, 8],
-                        out_channels: [8, 8, 1],
-                        kernel_sizes: [3, 3, 1],
-                        strides: 1,
-                        padding: [1,1,0],
-                        dilation: 1,
-                        batch_norm: True,
-                        end_activation: "relu"},
-
-                        {
-                        in_channels: [64, 8, 8],
-                        out_channels: [8, 8, 2],
-                        kernel_sizes: [3, 3, 1],
-                        strides: 1,
-                        padding: [1,1,0],
-                        dilation: 1,
-                        batch_norm: True,
-                        end_activation: "sigmoid"},
-        ]
+                        
+                        in_channels: [64, 8, 8]
+                        out_channels: [8, 8, 1]
+                        kernel_sizes: [3, 3, 1]
+                        strides: 1
+                        padding: [1,1,0]
+                        dilation: 1
+                        batch_norm: True
+                        end_activation: "relu"
+        
                 
