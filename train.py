@@ -30,6 +30,7 @@ from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
 from utils.modules import SegmentationHead
 from utils.modules import defined_activations
+from utils.image_transforms import angle_map
 import segmentation_models_pytorch as smp
 
 
@@ -198,7 +199,7 @@ def train(opt):
     valid_evaluator = Engine(valid_step)
 
     # setup learning rate scheduler
-    step_scheduler = StepLR(optimizer, step_size=1, gamma=configs["train"]["lr-decay"])
+    step_scheduler = StepLR(optimizer, step_size=10, gamma=configs["train"]["lr-decay"])
     scheduler = LRScheduler(step_scheduler)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, scheduler)
 
@@ -281,17 +282,17 @@ def train(opt):
         inp = d["input"].cpu()
         im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
         im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
-        im_3 = make_grid(predictions[:, 2:3, :, :], normalize=True, scale_each=True)
-        im_4 = make_grid(predictions[:, 3:4, :, :], normalize=True, scale_each=True)
+        angle_im = angle_map(predictions[:, 2:4, :, :])
+        im_3 = make_grid(angle_im, normalize=True, scale_each=True)
 
         t_1 = make_grid(ground_trouth[:, 0:1, :, :], normalize=True, scale_each=True)
         t_2 = make_grid(ground_trouth[:, 1:2, :, :], normalize=True, scale_each=True)
-        t_3 = make_grid(ground_trouth[:, 2:3, :, :], normalize=True, scale_each=True)
-        t_4 = make_grid(ground_trouth[:, 3:4, :, :], normalize=True, scale_each=True)
+        angle_im = angle_map(ground_trouth[:, 2:4, :, :])
+        t_3 = make_grid(angle_im, normalize=True, scale_each=True)
 
         rgb = make_grid(inp[:, :3, :, :], normalize=True, scale_each=True)
 
-        glob_step = trainer.state.epoch
+        glob_step = trainer.state.iteration
 
         tb_logger.writer.add_image(
             "dist_pred",
@@ -301,10 +302,8 @@ def train(opt):
         tb_logger.writer.add_image("dist_gt", t_1, global_step=glob_step)
         tb_logger.writer.add_image("end_pred", im_2, global_step=glob_step)
         tb_logger.writer.add_image("end_gt", t_2, global_step=glob_step)
-        tb_logger.writer.add_image("dir_x_pred", im_3, global_step=glob_step)
-        tb_logger.writer.add_image("dir_x_gt", t_3, global_step=glob_step)
-        tb_logger.writer.add_image("dir_y_pred", im_4, global_step=glob_step)
-        tb_logger.writer.add_image("dir_y_gt", t_4, global_step=glob_step)
+        tb_logger.writer.add_image("dir_pred", im_3, global_step=glob_step)
+        tb_logger.writer.add_image("dir_gt", t_3, global_step=glob_step)
         tb_logger.writer.add_image("rgb", rgb, global_step=glob_step)
 
     @trainer.on(Events.EPOCH_COMPLETED)
