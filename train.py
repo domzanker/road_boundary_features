@@ -228,7 +228,7 @@ def train(opt):
     )
     """
 
-    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+    MeanPairwiseDistance(p=2, output_transform=lambda x: [x[0], x[1]]).attach(
         valid_evaluator, "mpd"
     )
     RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
@@ -267,7 +267,7 @@ def train(opt):
     @trainer.on(Events.ITERATION_COMPLETED(every=100))
     def log_tensorboard_images(engine):
         out = engine.state.output
-        d = out[4]
+        d = out[1]
         predictions = torch.cat(d["predictions"], dim=1)
         predictions = predictions.cpu()
         ground_trouth = torch.cat(d["ground_trouth"], dim=1)
