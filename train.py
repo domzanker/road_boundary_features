@@ -240,7 +240,7 @@ def train(opt):
     """
 
     tb_logger = tensorboard_logger.TensorboardLogger(
-        log_dir="data/tensorboard/tb_logs_{}".format(opt.tag),
+        log_dir="data/tensorboard/dist_only/tb_logs_{}".format(opt.tag),
     )
 
     tb_logger.attach_output_handler(
