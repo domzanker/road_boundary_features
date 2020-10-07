@@ -200,7 +200,7 @@ def train(opt):
     valid_bar.attach(valid_evaluator)
 
     RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
-    RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
+    # RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
     # RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
     # RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
     GpuInfo().attach(trainer, name="gpu")
@@ -328,7 +328,7 @@ def train(opt):
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
-                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
+                engine.state.epoch, metrics["mpd"], metrics["loss"]
             )
         )
         """
