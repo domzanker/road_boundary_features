@@ -12,7 +12,7 @@ defined_activations = torch.nn.ModuleDict(
     }
 )
 
-smp_models = torch.nn.ModuleDict({"linknet": smp.Linknet, "fpn": smp.FPN})
+smp_models = {"linknet": smp.Linknet, "fpn": smp.FPN}
 
 
 class FeatureExtrationNet(torch.nn.Module):
