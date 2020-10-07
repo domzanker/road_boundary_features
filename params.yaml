@@ -5,8 +5,9 @@ dataset:
         valid-dataset: "data/nuscenes-complete-15x10/valid"
 
 train:
-        learning-rate: 0.005
-        lr-decay: 0.1
+        learning-rate: 0.01
+        lr-decay: 0.9
+        lr_decay_step_size: 2
         batch-size: 2
         weight_decay: 0.0004
 

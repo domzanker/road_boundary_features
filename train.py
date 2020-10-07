@@ -184,7 +184,11 @@ def train(opt):
     valid_evaluator = Engine(valid_step)
 
     # setup learning rate scheduler
-    step_scheduler = StepLR(optimizer, step_size=10, gamma=configs["train"]["lr-decay"])
+    step_scheduler = StepLR(
+        optimizer,
+        step_size=configs["train"]["lr_decay_step_size"],
+        gamma=configs["train"]["lr-decay"],
+    )
     scheduler = LRScheduler(step_scheduler)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, scheduler)
 
