@@ -15,43 +15,46 @@ train:
         checkpoint-interval: 1
 
 model:
-        use_custom_encoder: false
-        encoder: "resnet18"
-        encoder_weights: null
-        #encoder_weights: "imagenet"
-        encoder_depth: 2
-        activation: "sigmoid"
-        decoder_use_batchnorm: true
+        encoder_decoder:
+                encoder_name: "resnet18"
+                encoder_weights: null
+                #encoder_weights: "imagenet"
+                in_channels: 4
+                encoder_depth: 2
+                classes: 64
+                activation: "sigmoid"
+                decoder_use_batchnorm: true
 
         head: [
-                {
-                in_channels: [64, 8, 8],
-                out_channels: [8, 8, 1],
-                kernel_sizes: [3, 3, 1],
-                strides: 1,
-                padding: [1,1,0],
-                dilation: 1,
-                batch_norm: True,
-                end_activation: "relu"},
+                branches:
+                        {
+                        in_channels: [64, 8, 8],
+                        out_channels: [8, 8, 1],
+                        kernel_sizes: [3, 3, 1],
+                        strides: 1,
+                        padding: [1,1,0],
+                        dilation: 1,
+                        batch_norm: True,
+                        end_activation: "relu"},
 
-                {
-                in_channels: [64, 8, 8],
-                out_channels: [8, 8, 1],
-                kernel_sizes: [3, 3, 1],
-                strides: 1,
-                padding: [1,1,0],
-                dilation: 1,
-                batch_norm: True,
-                end_activation: "relu"},
+                        {
+                        in_channels: [64, 8, 8],
+                        out_channels: [8, 8, 1],
+                        kernel_sizes: [3, 3, 1],
+                        strides: 1,
+                        padding: [1,1,0],
+                        dilation: 1,
+                        batch_norm: True,
+                        end_activation: "relu"},
 
-                {
-                in_channels: [64, 8, 8],
-                out_channels: [8, 8, 2],
-                kernel_sizes: [3, 3, 1],
-                strides: 1,
-                padding: [1,1,0],
-                dilation: 1,
-                batch_norm: True,
-                end_activation: "sigmoid"},
+                        {
+                        in_channels: [64, 8, 8],
+                        out_channels: [8, 8, 2],
+                        kernel_sizes: [3, 3, 1],
+                        strides: 1,
+                        padding: [1,1,0],
+                        dilation: 1,
+                        batch_norm: True,
+                        end_activation: "sigmoid"},
         ]
                 

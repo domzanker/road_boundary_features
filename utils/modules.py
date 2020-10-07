@@ -1,5 +1,6 @@
 import torch
 from typing import Optional, Tuple, Union, List, Dict, Any
+import segmentation_models_pytorch as smp
 
 defined_activations = torch.nn.ModuleDict(
     {
@@ -11,19 +12,45 @@ defined_activations = torch.nn.ModuleDict(
     }
 )
 
+smp_models = torch.nn.ModuleDict({"linknet": smp.Linknet, "fpn": smp.FPN})
+
+
+class FeatureExtrationNet(torch.nn.Module):
+    def __init__(self, model_configs: Dict[str, Any]):
+        super(FeatureExtrationNet, self).__init__()
+
+        self.encoder_decoder = smp_models[model_configs["model"]](
+            **model_configs["encoder_decoder"]
+        )
+        if model_configs["encoder_decoder"]["encoder_weights"]:
+            self.preprocessing_params = smp.encoders.get_preprocessing_params(
+                encoder_name=model_configs["encoder_decoder"]["encoder"],
+                pretrained=model_configs["encoder_weights"],
+            )
+        else:
+            self.preprocessing_params = None
+
+        self.head = SegmentationHead(**model_configs["head"])
+
+    def forward(self, x):
+        x = self.encoder_decoder(x)
+        x = self.head(x)
+        return x
+
 
 class SegmentationHead(torch.nn.Module):
     def __init__(
         self,
-        branch_definition: Union[List[List[int]], List[Dict[str, Any]]],
+        branches: Union[List[List[int]], List[Dict[str, Any]]],
         upsample_mode: str = "nearest",
         scale_factor: float = 2.0,
+        **kwargs
     ):
 
         super(SegmentationHead, self).__init__()
 
         self.branches = torch.nn.ModuleList()
-        for branch in branch_definition:
+        for branch in branches:
             if isinstance(branch, list):
                 branch = {
                     "in_channels": branch[0],

@@ -28,7 +28,7 @@ from torchvision.utils import make_grid
 
 from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
-from utils.modules import SegmentationHead
+from utils.modules import FeatureExtrationNet
 from utils.modules import defined_activations
 from utils.image_transforms import angle_map
 import segmentation_models_pytorch as smp
@@ -43,40 +43,19 @@ def train(opt):
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
 
     # Initiate model
-    model_configs = configs["model"]
-    if not model_configs["use_custom_encoder"]:
-        encoder = smp.Linknet(
-            encoder_name=model_configs["encoder"],
-            encoder_weights=model_configs["encoder_weights"],
-            in_channels=4,
-            encoder_depth=model_configs["encoder_depth"],
-            classes=64,
-            activation=model_configs["activation"],
-            decoder_use_batchnorm=model_configs["decoder_use_batchnorm"],
-        )
-
-    if model_configs["encoder_weights"] is not None:
-        preprocessing_params = smp.encoders.get_preprocessing_params(
-            encoder_name=model_configs["encoder"],
-            pretrained=model_configs["encoder_weights"],
-        )
-    else:
-        preprocessing_params = None
-
-    segmentation_head = SegmentationHead(branch_definition=model_configs["head"])
-    model = torch.nn.Sequential(encoder, segmentation_head)
+    model = FeatureExtrationNet(configs["model"])
     model.to(device)
 
     # Get dataloader
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=preprocessing_params,
+        transform=model.preprocessing_params,
     )
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=preprocessing_params,
+        transform=model.preprocessing_params,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -103,9 +82,9 @@ def train(opt):
 
         targets = targets.to(device)
         dist_t = targets[:, 0:1, :, :]
-        end_t = targets[:, 1:2, :, :]
-        dir_t = targets[:, 2:4, :, :]
-        targets = [dist_t, end_t, dir_t]
+        # end_t = targets[:, 1:2, :, :]
+        # dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t]  # , end_t, dir_t]
 
         model.zero_grad()
 
@@ -113,8 +92,9 @@ def train(opt):
 
         # compute loss function
         distLoss = torch.nn.functional.mse_loss(
-            predictions[0], targets[0], reduction="sum"
+            predictions[0], targets[0], reduction="mean"
         )
+        """
         endLoss = torch.nn.functional.mse_loss(
             predictions[1], targets[1], reduction="sum"
         )
@@ -122,10 +102,11 @@ def train(opt):
             predictions[2], targets[2]
         ).sum()
 
-        weight = 10
-        combined_loss = dirLoss + weight * distLoss + weight * endLoss
+        # weight = 10
+        # ombined_loss = dirLoss + weight * distLoss + weight * endLoss
+        """
 
-        combined_loss.backward()
+        distLoss.backward()
 
         optimizer.step()
 
@@ -136,10 +117,10 @@ def train(opt):
         }
 
         return (
-            combined_loss.item(),
+            # combined_loss.item(),
             distLoss.item(),
-            endLoss.item(),
-            dirLoss.item(),
+            # endLoss.item(),
+            # dirLoss.item(),
             kwargs,
         )
 
@@ -151,9 +132,9 @@ def train(opt):
 
         targets = targets.to(device)
         dist_t = targets[:, 0:1, :, :]
-        end_t = targets[:, 1:2, :, :]
-        dir_t = targets[:, 2:4, :, :]
-        targets = [dist_t, end_t, dir_t]
+        # end_t = targets[:, 1:2, :, :]
+        # dir_t = targets[:, 2:4, :, :]
+        targets = [dist_t]  # , end_t, dir_t]
 
         model.zero_grad()
 
@@ -163,6 +144,8 @@ def train(opt):
         distLoss = torch.nn.functional.mse_loss(
             predictions[0], targets[0], reduction="sum"
         )
+
+        """
         endLoss = torch.nn.functional.mse_loss(
             predictions[1], targets[1], reduction="sum"
         )
@@ -172,19 +155,21 @@ def train(opt):
 
         weight = 10
         combined_loss = dirLoss + weight * distLoss + weight * endLoss
+        """
+        combined_loss = distLoss
 
         kwargs = {
             "input": imgs.detach(),
             "dist_pred": predictions[0].detach(),
-            "end_pred": predictions[1].detach(),
-            "dir_pred": predictions[2].detach(),
+            # "end_pred": predictions[1].detach(),
+            # "dir_pred": predictions[2].detach(),
             "dist": dist_t.detach(),
-            "end": end_t.detach(),
-            "dir": dir_t.detach(),
+            # "end": end_t.detach(),
+            # "dir": dir_t.detach(),
             "loss": combined_loss.item(),
             "dist_loss": distLoss.item(),
-            "end_loss": endLoss.item(),
-            "dir_loss": dirLoss.item(),
+            # "end_loss": endLoss.item(),
+            # "dir_loss": dirLoss.item(),
         }
 
         return (
@@ -212,8 +197,8 @@ def train(opt):
 
     RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
     RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
-    RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
-    RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
+    # RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
+    # RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
     GpuInfo().attach(trainer, name="gpu")
     progress_bar.attach(
         trainer,
@@ -230,12 +215,14 @@ def train(opt):
     RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
         train_evaluator, name="l_dist"
     )
+    """
     RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
         train_evaluator, name="l_end"
     )
     RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
         train_evaluator, name="l_dir"
     )
+    """
 
     MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
         valid_evaluator, "mpd"
@@ -243,12 +230,14 @@ def train(opt):
     RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
         valid_evaluator, name="l_dist"
     )
+    """
     RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
         valid_evaluator, name="l_end"
     )
     RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
         valid_evaluator, name="l_dir"
     )
+    """
 
     tb_logger = tensorboard_logger.TensorboardLogger(
         log_dir="data/tensorboard/tb_logs_{}".format(opt.tag),
@@ -281,35 +270,43 @@ def train(opt):
         ground_trouth = ground_trouth.cpu()
         inp = d["input"].cpu()
         im_1 = make_grid(predictions[:, 0:1, :, :], normalize=True, scale_each=True)
+        """
         im_2 = make_grid(predictions[:, 1:2, :, :], normalize=True, scale_each=True)
         angle_im = angle_map(predictions[:, 2:4, :, :])
         im_3 = make_grid(angle_im, normalize=True, scale_each=True)
+        """
 
         t_1 = make_grid(ground_trouth[:, 0:1, :, :], normalize=True, scale_each=True)
+        """
         t_2 = make_grid(ground_trouth[:, 1:2, :, :], normalize=True, scale_each=True)
         angle_im = angle_map(ground_trouth[:, 2:4, :, :])
         t_3 = make_grid(angle_im, normalize=True, scale_each=True)
+        """
 
         rgb = make_grid(inp[:, :3, :, :], normalize=True, scale_each=True)
 
-        glob_step = trainer.state.iteration * trainer.state.epoch
+        glob_step = trainer.state.iteration
 
-        tb_logger.writer.add_image(
-            "dist_pred",
-            im_1,
-            global_step=glob_step,
-        )
+        tb_logger.writer.add_image("dist_pred", im_1, global_step=glob_step)
         tb_logger.writer.add_image("dist_gt", t_1, global_step=glob_step)
+        """
         tb_logger.writer.add_image("end_pred", im_2, global_step=glob_step)
         tb_logger.writer.add_image("end_gt", t_2, global_step=glob_step)
         tb_logger.writer.add_image("dir_pred", im_3, global_step=glob_step)
         tb_logger.writer.add_image("dir_gt", t_3, global_step=glob_step)
+        """
         tb_logger.writer.add_image("rgb", rgb, global_step=glob_step)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
         train_evaluator.run(train_loader, epoch_length=150, max_epochs=1)
         metrics = train_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
+                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
+            )
+        )
+        """
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
                 engine.state.epoch,
@@ -319,11 +316,18 @@ def train(opt):
                 metrics["l_dir"],
             )
         )
+        """
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
         valid_evaluator.run(val_loader, epoch_length=150, max_epochs=1)
         metrics = valid_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
+                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
+            )
+        )
+        """
         progress_bar.log_message(
             "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
                 engine.state.epoch,
@@ -333,6 +337,7 @@ def train(opt):
                 metrics["l_dir"],
             )
         )
+        """
 
     to_save = {"model": model, "optimizer": optimizer, "trainer": trainer}
     checkpoint_handler = Checkpoint(
