@@ -24,8 +24,8 @@ class FeatureExtrationNet(torch.nn.Module):
         )
         if model_configs["encoder_decoder"]["encoder_weights"]:
             self.preprocessing_params = smp.encoders.get_preprocessing_params(
-                encoder_name=model_configs["encoder_decoder"]["encoder"],
-                pretrained=model_configs["encoder_weights"],
+                encoder_name=model_configs["encoder_decoder"]["encoder_name"],
+                pretrained=model_configs["encoder_decoder"]["encoder_weights"],
             )
         else:
             self.preprocessing_params = None
