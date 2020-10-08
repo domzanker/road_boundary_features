@@ -328,7 +328,7 @@ def train(opt):
         metrics = valid_evaluator.state.metrics
         progress_bar.log_message(
             "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
-                engine.state.epoch, metrics["mpd"], metrics["loss"]
+                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
             )
         )
         """
