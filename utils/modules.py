@@ -30,7 +30,8 @@ class FeatureExtrationNet(torch.nn.Module):
         else:
             self.preprocessing_params = None
 
-        self.head = SegmentationHead(**model_configs["head"])
+        # self.head = SegmentationHead(**model_configs["head"])
+        self.head = torch.nn.Identity()
 
     def forward(self, x):
         x = self.encoder_decoder(x)
@@ -206,3 +207,19 @@ class ConvBlock(torch.nn.Module):
             x = self.batch_norm(x)
         conv = self.conv(x)
         return self.activation(conv)
+
+
+class ResidualBlock:
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Union[int, Tuple[int, int]],
+        padding: Union[int, Tuple[int, int]] = 0,
+        dilation: Union[int, Tuple[int, int]] = 1,
+    ):
+        super(ResidualBlock, self).__init__()
+
+    def forward(self, x):
+        return x
