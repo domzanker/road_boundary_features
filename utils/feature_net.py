@@ -111,13 +111,15 @@ class DecoderBlock(Module):
             scale_factor=upsampling_factor, mode=upsampling_mode
         )
         if apply_instance_norm:
-            self.instance_normalize = torch.nn.InstanceNorm2d()
-        else:
             self.instance_normalize = torch.nn.ModuleList(
                 [
                     torch.nn.InstanceNorm2d(num_features=in_channels[i])
                     for i in range(nmbr_convs)
                 ]
+            )
+        else:
+            self.instance_normalize = torch.nn.ModuleList(
+                [torch.nn.Identity() for _ in range(nmbr_convs)]
             )
 
     def forward(self, x, skip=None):
