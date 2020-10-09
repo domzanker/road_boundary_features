@@ -126,7 +126,7 @@ class DecoderBlock(Module):
         x = self.upsample(x)
         for i, layer in enumerate(self.block):
             x = self.instance_normalize[i](x)
-            x = self.layer(x)
+            x = layer(x)
             x = self.activate(x)
         if skip is not None:
             x = x + skip
