@@ -16,7 +16,7 @@ train:
         checkpoint-interval: 1
 
 model:
-        input_channels: 3
+        input_channels: 4
         encoder_prec:
                 out_channels: 64
                 stride: 2
