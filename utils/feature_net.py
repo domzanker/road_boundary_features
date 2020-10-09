@@ -192,7 +192,7 @@ class EncoderBlock(Module):
         self.head_block = ResidualBlock(
             in_channels=in_channels,
             out_channels=out_channels,
-            stride=2,
+            stride=[2, 1, 1],
             kernel_size=kernel_size[0],
             dilation=dilation[0],
         )
