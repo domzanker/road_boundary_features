@@ -114,7 +114,10 @@ class DecoderBlock(Module):
             self.instance_normalize = torch.nn.InstanceNorm2d()
         else:
             self.instance_normalize = torch.nn.ModuleList(
-                [torch.nn.Identity() for _ in range(nmbr_convs)]
+                [
+                    torch.nn.InstanceNorm2d(num_features=in_channels[i])
+                    for i in range(nmbr_convs)
+                ]
             )
 
     def forward(self, x, skip=None):
