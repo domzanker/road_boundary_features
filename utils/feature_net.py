@@ -1,6 +1,6 @@
 import torch
 from torch.nn import Module, Sequential
-from modules import SegmentationHead, ResidualBlock, Conv2dAuto, activation_func
+from utils.modules import SegmentationHead, ResidualBlock, Conv2dAuto, activation_func
 
 from typing import Union, List, Tuple, Optional, Dict, Any
 from torch.nn.common_types import _size_2_t
