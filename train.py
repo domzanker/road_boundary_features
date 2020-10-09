@@ -30,6 +30,7 @@ from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
 from utils.modules import FeatureExtrationNet
 from utils.modules import defined_activations
+from utils.feature_net import FeatureNet
 from utils.image_transforms import angle_map
 import segmentation_models_pytorch as smp
 
@@ -43,19 +44,27 @@ def train(opt):
     device = torch.device(("cuda:%s" % opt.gpu) if torch.cuda.is_available() else "cpu")
 
     # Initiate model
-    model = FeatureExtrationNet(configs["model"])
+    # model = FeatureExtrationNet(configs["model"])
+    model_configs = configs["model"]
+    model = FeatureNet(
+        in_channels=model_configs["input_channels"],
+        encoder_prec=model_configs["encoder_prec"],
+        encoder=model_configs["encoder"],
+        decoder=model_configs["decoder"],
+        head=model_configs["head"],
+    )
     model.to(device)
 
     # Get dataloader
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=model.preprocessing_params,
+        # transform=model.preprocessing_params,
     )
     valid_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
-        transform=model.preprocessing_params,
+        # transform=model.preprocessing_params,
     )
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -92,7 +101,7 @@ def train(opt):
 
         # compute loss function
         distLoss = torch.nn.functional.mse_loss(
-            predictions[0], targets[0], reduction="mean"
+            predictions[0], targets[0], reduction="sum"
         )
         """
         endLoss = torch.nn.functional.mse_loss(
