@@ -1,16 +1,20 @@
 import torch
 from typing import Optional, Tuple, Union, List, Dict, Any
+from torch.nn.common_types import _size_2_t
 import segmentation_models_pytorch as smp
 
-defined_activations = torch.nn.ModuleDict(
-    {
-        "relu": torch.nn.ReLU(),
-        "sigmoid": torch.nn.Sigmoid(),
-        "softmax": torch.nn.Softmax2d(),
-        "lrelu": torch.nn.LeakyReLU(),
-        "none": torch.nn.Identity(),
-    }
-)
+
+def activation_func(activation: str):
+    return torch.nn.ModuleDict(
+        {
+            "relu": torch.nn.ReLU(inplace=True),
+            "sigmoid": torch.nn.Sigmoid(),
+            "softmax": torch.nn.Softmax2d(),
+            "lrelu": torch.nn.LeakyReLU(inplace=True),
+            "none": torch.nn.Identity(),
+        }
+    )[activation]
+
 
 smp_models = {"linknet": smp.Linknet, "fpn": smp.FPN}
 
@@ -200,7 +204,7 @@ class ConvBlock(torch.nn.Module):
             stride=stride,
             dilation=dilation,
         )
-        self.activation = defined_activations[activation]
+        self.activation = activation_func(activation)
 
     def forward(self, x: torch.Tensor):
         if self.batch_norm is not None:
@@ -209,17 +213,89 @@ class ConvBlock(torch.nn.Module):
         return self.activation(conv)
 
 
-class ResidualBlock:
+class ResidualBlock(torch.nn.Module):
     def __init__(
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Union[int, Tuple[int, int]],
-        stride: Union[int, Tuple[int, int]],
-        padding: Union[int, Tuple[int, int]] = 0,
-        dilation: Union[int, Tuple[int, int]] = 1,
+        depth: int = 3,
+        kernel_size: Union[_size_2_t, List[_size_2_t]] = 3,
+        stride: Union[_size_2_t, List[_size_2_t]] = 1,
+        dilation: Union[_size_2_t, List[_size_2_t]] = 1,
+        activation: str = "sigmoid",
+        batch_norm: bool = False,
+        *args,
+        **kwargs
     ):
         super(ResidualBlock, self).__init__()
+        self.in_channels, self.out_channels, self.activation = (
+            in_channels,
+            out_channels,
+            activation,
+        )
+
+        in_channels = [in_channels]
+        for i in range(1, depth):
+            in_channels.append(out_channels)
+
+        if not isinstance(kernel_size, list):
+            kernel_size = [kernel_size for _ in range(depth)]
+        if not isinstance(stride, list):
+            stride = [stride for _ in range(depth)]
+        if not isinstance(dilation, list):
+            dilation = [dilation for _ in range(depth)]
+        if not isinstance(out_channels, list):
+            out_channels = [out_channels for _ in range(depth)]
+
+        self.blocks = torch.nn.Sequential(
+            *[
+                Conv2dAuto(
+                    in_channels=in_channels[i],
+                    out_channels=out_channels[i],
+                    kernel_size=kernel_size[i],
+                    stride=stride[i],
+                    dilation=dilation[i],
+                )
+                for i in range(depth)
+            ]
+        )
+
+        if batch_norm:
+            self.normalize = torch.nn.BatchNorm2d(self.out_channels[-1])
+        else:
+            self.normalize = torch.nn.Identity()
+        self.activate = activation_func(activation)
+        self.shortcut = torch.nn.Identity()
 
     def forward(self, x):
+        if self.apply_skip_connection:
+            residual = self.shortcut(x)
+        else:
+            residual = x
+
+        x = self.blocks(x)
+        x += residual
+        x = self.normalize(x)
+        x = self.activate(x)
         return x
+
+    @property
+    def apply_skip_connection(self):
+        return self.in_channels != self.out_channels
+
+
+class Conv2dAuto(torch.nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super(Conv2dAuto, self).__init__(*args, **kwargs)
+        self.padding = (
+            (self.kernel_size[0] + (self.kernel_size[0] - 1) * (self.dilation[0] - 1))
+            // 2,
+            (self.kernel_size[1] + (self.kernel_size[1] - 1) * (self.dilation[1] - 1))
+            // 2,
+        )
+
+
+class FullConv(Conv2dAuto):
+    def __init__(self):
+        super(FullConv, self).__init__()
+        raise NotImplementedError
