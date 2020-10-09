@@ -94,7 +94,7 @@ class DecoderBlock(Module):
         if not isinstance(stride, list):
             stride = [stride for i in range(1, nmbr_convs)]
 
-        self.block = torch.ModuleList(
+        self.block = torch.nn.ModuleList(
             [
                 Conv2dAuto(
                     in_channels=in_channels[i],
@@ -113,7 +113,7 @@ class DecoderBlock(Module):
         if apply_instance_norm:
             self.instance_normalize = torch.nn.InstanceNorm2d()
         else:
-            self.instance_normalize = torch.ModuleList(
+            self.instance_normalize = torch.nn.ModuleList(
                 [torch.nn.Identity() for _ in range(nmbr_convs)]
             )
 
