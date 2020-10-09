@@ -29,7 +29,7 @@ from torchvision.utils import make_grid
 from utils.dataset import RoadBoundaryDataset
 from utils.losses import CombinedLoss
 from utils.modules import FeatureExtrationNet
-from utils.modules import defined_activations
+from utils.modules import activation_func
 from utils.feature_net import FeatureNet
 from utils.image_transforms import angle_map
 import segmentation_models_pytorch as smp
