@@ -52,7 +52,7 @@ class Decoder(Module):
         )
 
     def forward(self, *features):
-        features = features[1:]
+        # features = features[1:]
         features = features[::-1]
 
         x = features[0]
