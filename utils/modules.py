@@ -268,12 +268,11 @@ class ResidualBlock(torch.nn.Module):
         self.shortcut = torch.nn.Identity()
 
     def forward(self, x):
+
+        residual = x
+        x = self.blocks(x)
         if self.apply_skip_connection:
             residual = self.shortcut(x)
-        else:
-            residual = x
-
-        x = self.blocks(x)
         x += residual
         x = self.normalize(x)
         x = self.activate(x)
