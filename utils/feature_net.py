@@ -88,11 +88,11 @@ class DecoderBlock(Module):
             out_channels.append(in_channels[-1] / 2)
 
         if not isinstance(kernel_size, list):
-            kernel_size = [kernel_size for i in range(1, nmbr_convs)]
+            kernel_size = [kernel_size for i in range(nmbr_convs)]
         if not isinstance(dilation, list):
-            dilation = [dilation for i in range(1, nmbr_convs)]
+            dilation = [dilation for i in range(nmbr_convs)]
         if not isinstance(stride, list):
-            stride = [stride for i in range(1, nmbr_convs)]
+            stride = [stride for i in range(nmbr_convs)]
 
         self.block = torch.nn.ModuleList(
             [
