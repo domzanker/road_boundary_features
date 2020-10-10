@@ -17,7 +17,8 @@ train:
                 reduction: "sum"
 
         epochs: 15
-        validation-interval: 1000
+        validation-interval: 10
+        validation-batches: 10
 
         checkpoint-interval: 1
 

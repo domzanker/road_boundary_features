@@ -39,8 +39,8 @@ def train(opt):
 
     trainer = pl.Trainer(
         gpus=1,
-        max_epochs=configs["traing"]["epochs"],
-        limit_val_batches=100,
+        max_epochs=configs["train"]["epochs"],
+        limit_val_batches=configs["train"]["validation-batches"],
         val_check_interval=configs["train"]["validation-interval"],
     )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
