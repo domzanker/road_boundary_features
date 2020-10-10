@@ -8,7 +8,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
 from utils.losses import loss_func
-from utils.image_transforms import to_tensorboard
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
