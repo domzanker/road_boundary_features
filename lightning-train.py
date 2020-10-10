@@ -63,6 +63,7 @@ def train(opt):
     if opt.resume_training:
         trainer = pl.Trainer(
             gpus=opt.gpu,
+            distributed_backend="ddp",
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -76,6 +77,7 @@ def train(opt):
     else:
         trainer = pl.Trainer(
             gpus=opt.gpu,
+            distributed_backend="ddp",
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
