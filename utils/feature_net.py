@@ -7,6 +7,7 @@ from torchvision.utils import make_grid
 
 from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
 from utils.losses import loss_func
+from utils.image_transforms import to_tensorboard
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
@@ -43,6 +44,8 @@ class FeatureNet(pl.LightningModule):
         )
         self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
+        self.save_hyperparameters()
+
     def forward(self, x):
 
         x = self.encoder_prec(x)
@@ -63,15 +66,25 @@ class FeatureNet(pl.LightningModule):
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
         # logging to tensorboard
-        self.log("train_loss", loss)
-        tensorboard = self.logger.experiment
+        self.log("train_loss", loss, logger=True, on_step=True)
 
-        # create grid
-        # log each encoding stage
+        tensorboard = self.logger.experiment
         # log out out
-        tensorboard.add_images("distance map", y[:, 0:1, :, :], dataformats="NCHW")
-        tensorboard.add_images("distance pred", segmentation[0])
-        tensorboard.add_images("input rgb", x[:, :3, :, :], dataformats="NCHW")
+        y_ = y[:, 0:1, :, :]
+        y_ -= y_.min()
+        y_ /= y_.max()
+        tensorboard.add_images("train distance map", y_ * 255, dataformats="NCHW")
+
+        pred = segmentation[0] - segmentation[0].min()
+        pred /= pred.max()
+        tensorboard.add_images("train distance pred", pred * 255)
+
+        lid = x[:, 3:, :, :]
+        lid -= lid.min()
+        lid /= lid.max()
+        tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
+        tensorboard.add_images("train input rgb", x[:, :3, :, :], dataformats="NCHW")
+
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -87,10 +100,22 @@ class FeatureNet(pl.LightningModule):
         # logging to tensorboard
         self.log("val_loss", loss, on_epoch=True, logger=True)
         tensorboard = self.logger.experiment
+        # log out out
+        y_ = y[:, 0:1, :, :]
+        y_ -= y_.min()
+        y_ /= y_.max()
+        tensorboard.add_images("valid distance map", y_ * 255, dataformats="NCHW")
 
-        tensorboard.add_images("distance map", y[:, 0:1, :, :], dataformats="NCHW")
-        tensorboard.add_images("distance pred", segmentation[0])
-        tensorboard.add_images("input rgb", x[:, :3, :, :], dataformats="NCHW")
+        pred = segmentation[0] - segmentation[0].min()
+        pred /= pred.max()
+        tensorboard.add_images("valid distance pred", pred * 255)
+
+        lid = x[:, 3:, :, :]
+        lid -= lid.min()
+        lid /= lid.max()
+        tensorboard.add_images("valid input lidar", lid * 255, dataformats="NCHW")
+        tensorboard.add_images("valid input rgb", x[:, :3, :, :], dataformats="NCHW")
+
         return loss
 
     def configure_optimizers(self):
