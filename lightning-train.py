@@ -24,6 +24,9 @@ def train(opt):
 
     if len(opt.gpu) == 1:
         opt.gpu = opt.gpu[0]
+        dist_backend = None
+    else:
+        dist_backend = "ddp"
 
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
@@ -66,7 +69,7 @@ def train(opt):
     if opt.resume_training:
         trainer = pl.Trainer(
             gpus=opt.gpu,
-            distributed_backend="ddp",
+            distributed_backend=dist_backend,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -80,7 +83,7 @@ def train(opt):
     else:
         trainer = pl.Trainer(
             gpus=opt.gpu,
-            distributed_backend="ddp",
+            distributed_backend=dist_backend,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
