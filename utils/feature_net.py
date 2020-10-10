@@ -43,6 +43,7 @@ class FeatureNet(pl.LightningModule):
         self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
     def forward(self, x):
+
         x = self.encoder_prec(x)
         # pass through encoder, saving skip connections
         x = self.encoder(x)
@@ -55,8 +56,7 @@ class FeatureNet(pl.LightningModule):
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
-        decoding = self.decoder(encoding)
-
+        decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
