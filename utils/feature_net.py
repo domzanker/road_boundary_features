@@ -68,24 +68,23 @@ class FeatureNet(pl.LightningModule):
         # logging to tensorboard
         self.log("train_loss", loss, logger=True, on_step=True)
 
-        """
         tensorboard = self.logger.experiment
         # log out out
-        y_ = y[:, 0:1, :, :]
+        y_ = y[:, 0:1, :, :].detach()
         y_ -= y_.min()
         y_ /= y_.max()
         tensorboard.add_images("train distance map", y_ * 255, dataformats="NCHW")
 
-        pred = segmentation[0] - segmentation[0].min()
+        pred = segmentation[0].detach()
+        pred = pred - pred.min()
         pred /= pred.max()
         tensorboard.add_images("train distance pred", pred * 255)
 
-        lid = x[:, 3:, :, :]
+        lid = x[:, 3:, :, :].detach()
         lid -= lid.min()
         lid /= lid.max()
         tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
         tensorboard.add_images("train input rgb", x[:, :3, :, :], dataformats="NCHW")
-        """
 
         return loss
 

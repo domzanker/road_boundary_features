@@ -22,6 +22,9 @@ def train(opt):
     if opt.batch_size != 0:
         configs["train"]["batch-size"] = opt.batch_size
 
+    if len(opt.gpu) == 1:
+        opt.gpu = *opt.gpu
+
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
