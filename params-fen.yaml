@@ -3,6 +3,7 @@ dataset:
         size: [1280, 720]
         train-dataset: "data/nuscenes-complete-15x10/train"
         valid-dataset: "data/nuscenes-complete-15x10/valid"
+        test-dataset: "data/nuscenes-complete-15x10/test"
 
 train:
         learning-rate: 0.1
@@ -16,6 +17,7 @@ train:
                 reduction: "sum"
 
         epochs: 15
+        validation-interval: 1000
 
         checkpoint-interval: 1
 
