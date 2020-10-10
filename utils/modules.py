@@ -7,10 +7,10 @@ import segmentation_models_pytorch as smp
 def activation_func(activation: str):
     return torch.nn.ModuleDict(
         {
-            "relu": torch.nn.ReLU(inplace=True),
+            "relu": torch.nn.ReLU(),
             "sigmoid": torch.nn.Sigmoid(),
             "softmax": torch.nn.Softmax2d(),
-            "lrelu": torch.nn.LeakyReLU(inplace=True),
+            "lrelu": torch.nn.LeakyReLU(),
             "none": torch.nn.Identity(),
         }
     )[activation]
