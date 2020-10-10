@@ -24,12 +24,26 @@ def train(opt):
         pin_memory=True,
     )
 
-    # TODO define validation
+    val_dataset = RoadBoundaryDataset(
+        path=Path(configs["dataset"]["valid-dataset"]),
+        image_size=configs["dataset"]["size"],
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=configs["train"]["batch-size"],
+        num_workers=2,
+        pin_memory=True,
+    )
 
     model = FeatureNet(configs=configs)
 
-    trainer = pl.Trainer(gpus=1)
-    trainer.fit(model, train_loader)
+    trainer = pl.Trainer(
+        gpus=1,
+        max_epochs=configs["traing"]["epochs"],
+        limit_val_batches=100,
+        val_check_interval=configs["train"]["validation-interval"],
+    )
+    trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
 if __name__ == "__main__":
