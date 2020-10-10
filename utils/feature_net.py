@@ -84,7 +84,8 @@ class FeatureNet(pl.LightningModule):
         lid -= lid.min()
         lid /= lid.max()
         tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
-        tensorboard.add_images("train input rgb", x[:, :3, :, :], dataformats="NCHW")
+        rgb = x[:, :3, :, :].detach()
+        tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
 
         return loss
 
