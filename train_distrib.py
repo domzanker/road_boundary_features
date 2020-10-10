@@ -78,7 +78,7 @@ def train(local_rank, opt, configs, **kwargs):
     )
     val_loader = idist.auto_dataloader(
         valid_dataset,
-        batch_size=configs["train"]["batch_size"],
+        batch_size=configs["train"]["batch-size"],
         shuffle=False,
         num_workers=2,
     )
