@@ -1,34 +1,44 @@
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import torch
 from torch.nn import Module, Sequential
-from utils.modules import SegmentationHead, ResidualBlock, Conv2dAuto, activation_func
-
-from typing import Union, List, Tuple, Optional, Dict, Any
 from torch.nn.common_types import _size_2_t
 
+from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
+from utils.losses import loss_func
 
-class FeatureNet(Module):
+from utils.dataset import RoadBoundaryDataset
+import pytorch_lightning as pl
+
+
+class FeatureNet(pl.LightningModule):
     def __init__(
         self,
-        in_channels: int,
-        encoder_prec: Dict[str, Any],
-        encoder: Dict[str, Any],
-        decoder: Dict[str, Any],
-        head: Dict[str, Any],
-        use_custom_encoder: bool = False,
-        **kwargs,
+        configs: Dict[str, Any],
     ):
         super(FeatureNet, self).__init__()
 
+        self.model_configs = configs["model"]
+        self.train_configs = configs["train"]
+
         self.encoder_prec = Sequential(
-            Conv2dAuto(in_channels=in_channels, **encoder_prec),
+            Conv2dAuto(
+                in_channels=self.model_configs["input_channels"],
+                **self.model_configs["encoder_prec"],
+            ),
             torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
-        if use_custom_encoder:
+        if self.model_configs["use_custom_encoder"]:
             raise NotImplementedError
         else:
-            self.encoder = Encoder(**encoder)
-        self.decoder = Decoder(**decoder)
-        self.head = SegmentationHead(**head)
+            self.encoder = Encoder(**self.model_configs["encoder"])
+        self.decoder = Decoder(**self.model_configs["decoder"])
+        self.head = SegmentationHead(**self.model_configs["head"])
+
+        loss_args = (
+            self.train_configs["loss"] if "loss" in self.train_configs.keys() else {}
+        )
+        self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
     def forward(self, x):
         x = self.encoder_prec(x)
@@ -37,6 +47,26 @@ class FeatureNet(Module):
         x = self.decoder(*x)
         x = self.head(x)
         return x
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+
+        encoding = self.encoder(x)
+        decoding = self.decoder(encoding)
+
+        segmentation = self.head(decoding)
+
+        loss = self.loss(segmentation, y)
+
+        # logging to tensorboard
+        self.log("train_loss", loss)
+        return loss
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=self.train_configs["learning-rate"]
+        )
+        return optimizer
 
 
 class Decoder(Module):
