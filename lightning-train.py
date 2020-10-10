@@ -8,7 +8,11 @@ from torch.utils.data.dataloader import DataLoader
 from utils.dataset import RoadBoundaryDataset
 from utils.feature_net import FeatureNet
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import (
+    ModelCheckpoint,
+    GPUStatsMonitor,
+    LearningRateMonitor,
+)
 
 
 def train(opt):
@@ -44,6 +48,8 @@ def train(opt):
     checkpoint_callback = ModelCheckpoint(
         filepath="data/checkpoints/" + opt.tag + "/{epoch}", period=1, verbose=True
     )
+    gpustats = GPUStatsMonitor(temperature=True)
+    lr_monitor = LearningRateMonitor()
     if opt.load_model or opt.resume_training:
         if opt.checkpoint is not None:
             checkpoint_file = opt.checkpoint
@@ -65,6 +71,7 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
+            callbacks=[gpustats, lr_monitor],
         )
     else:
         trainer = pl.Trainer(
@@ -76,6 +83,7 @@ def train(opt):
             log_every_n_steps=configs["train"]["logger-interval"],
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
+            callbacks=[gpustats, lr_monitor],
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 

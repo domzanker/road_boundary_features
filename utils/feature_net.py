@@ -4,6 +4,7 @@ import torch
 from torch.nn import Module, Sequential
 from torch.nn.common_types import _size_2_t
 from torchvision.utils import make_grid
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
 from utils.losses import loss_func
@@ -122,7 +123,14 @@ class FeatureNet(pl.LightningModule):
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.train_configs["learning-rate"]
         )
-        return optimizer
+        lr_scheduler = {
+            "scheduler": ReduceLROnPlateau(
+                optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=2
+            ),
+            "monitor": "val_loss",
+            "name": "plateau_scheduler",
+        }
+        return [optimizer], [lr_scheduler]
 
 
 class Decoder(Module):
