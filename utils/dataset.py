@@ -91,7 +91,6 @@ class RoadBoundaryDataset(Dataset):
                 vision_transforms.Normalize(mean=0.5, std=0.5),
             ]
         )
-        torch.autograd.detect_anomaly()
 
         assert complete_sample["road_direction_map"].shape[-1] == 2
         assert complete_sample["inverse_distance_map"].shape[-1] == 1

@@ -68,6 +68,7 @@ class FeatureNet(pl.LightningModule):
         # logging to tensorboard
         self.log("train_loss", loss, logger=True, on_step=True)
 
+        """
         tensorboard = self.logger.experiment
         # log out out
         y_ = y[:, 0:1, :, :]
@@ -84,6 +85,7 @@ class FeatureNet(pl.LightningModule):
         lid /= lid.max()
         tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
         tensorboard.add_images("train input rgb", x[:, :3, :, :], dataformats="NCHW")
+        """
 
         return loss
 
