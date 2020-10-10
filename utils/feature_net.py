@@ -36,7 +36,9 @@ class FeatureNet(pl.LightningModule):
         self.head = SegmentationHead(**self.model_configs["head"])
 
         loss_args = (
-            self.train_configs["loss"] if "loss" in self.train_configs.keys() else {}
+            self.train_configs["loss-args"]
+            if "loss-args" in self.train_configs.keys()
+            else {}
         )
         self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
