@@ -87,8 +87,8 @@ class RoadBoundaryDataset(Dataset):
             [
                 vision_transforms.ToPILImage(),
                 vision_transforms.Resize(size=self.image_size),
-                vision_transforms.Normalize(mean=0.5, std=0.5, inplace=True),
                 vision_transforms.ToTensor(),
+                vision_transforms.Normalize(mean=0.5, std=0.5, inplace=True),
             ]
         )
 
