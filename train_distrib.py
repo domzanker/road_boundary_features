@@ -435,5 +435,6 @@ if __name__ == "__main__":
     parser.add_argument("--resume", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
     # dataparallel configs
-    opt = parser.parse_args("--master_addr", type=str, default="localhost")
-    opt = parser.parse_args("--master_port", type=int, default=12355)
+    parser.add_argument("--master_addr", type=str, default="localhost")
+    parser.add_argument("--master_port", type=int, default=12355)
+    opt = parser.parse_args()
