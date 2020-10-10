@@ -1,3 +1,4 @@
+import os
 import torch
 import yaml
 import argparse
@@ -7,6 +8,7 @@ from torch.utils.data.dataloader import DataLoader
 from utils.dataset import RoadBoundaryDataset
 from utils.feature_net import FeatureNet
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 
 def train(opt):
@@ -36,18 +38,42 @@ def train(opt):
         pin_memory=True,
     )
 
-    model = FeatureNet(configs=configs)
+    checkpoint_callback = ModelCheckpoint(
+        filepath="data/checkpoints/" + opt.tag + "/{epoch}", period=1, verbose=True
+    )
+    if opt.load_model or opt.resume_training:
+        if opt.checkpoint is not None:
+            checkpoint_file = opt.checkpoint
+        else:
+            raise NotImplementedError
+        model = FeatureNet.load_from_checkpoint(checkpoint_file)
+    else:
+        model = FeatureNet(configs=configs)
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
-    trainer = pl.Trainer(
-        gpus=1,
-        max_epochs=configs["train"]["epochs"],
-        limit_val_batches=configs["train"]["validation-batches"],
-        val_check_interval=configs["train"]["validation-interval"],
-        logger=logger,
-        log_every_n_steps=configs["train"]["logger-interval"],
-        log_gpu_memory=True,
-    )
+    if opt.resume_training:
+        trainer = pl.Trainer(
+            gpus=1,
+            max_epochs=configs["train"]["epochs"],
+            limit_val_batches=configs["train"]["validation-batches"],
+            val_check_interval=configs["train"]["validation-interval"],
+            logger=logger,
+            log_every_n_steps=configs["train"]["logger-interval"],
+            log_gpu_memory=True,
+            checkpoint_callback=checkpoint_callback,
+            resume_from_checkpoint=checkpoint_file,
+        )
+    else:
+        trainer = pl.Trainer(
+            gpus=1,
+            max_epochs=configs["train"]["epochs"],
+            limit_val_batches=configs["train"]["validation-batches"],
+            val_check_interval=configs["train"]["validation-interval"],
+            logger=logger,
+            log_every_n_steps=configs["train"]["logger-interval"],
+            log_gpu_memory=True,
+            checkpoint_callback=checkpoint_callback,
+        )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
@@ -59,7 +85,8 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", type=int, default=0, help="gpu")
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
     parser.add_argument("--tag", type=str, default="training", help="")
-    parser.add_argument("--resume", type=bool, default=False, help="")
+    parser.add_argument("--load_model", type=bool, default=False, help="")
+    parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
     # FIXME resume training
 
