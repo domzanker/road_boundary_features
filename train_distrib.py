@@ -438,3 +438,5 @@ if __name__ == "__main__":
     parser.add_argument("--master_addr", type=str, default="localhost")
     parser.add_argument("--master_port", type=int, default=12355)
     opt = parser.parse_args()
+
+    main(opt)
