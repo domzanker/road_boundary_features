@@ -54,7 +54,10 @@ def train(local_rank, opt, configs, **kwargs):
     )
     model = idist.auto_model(model)
 
-    loss = loss_func(configs["train"]["loss"], **configs["train"]["loss_config"])
+    loss_args = (
+        configs["train"]["loss-args"] if "loss-args" in configs["train"].keys() else {}
+    )
+    loss = loss_func(configs["train"]["loss"], **loss_args)
 
     # Get dataloader
     train_dataset = RoadBoundaryDataset(
