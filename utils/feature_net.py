@@ -65,6 +65,20 @@ class FeatureNet(pl.LightningModule):
         self.log("train_loss", loss)
         return loss
 
+    def validation_step(self, batch, batch_idx):
+
+        x, y = batch
+        prec = self.encoder_prec(x)
+        encoding = self.encoder(prec)
+        decoding = self.decoder(*encoding)
+        segmentation = self.head(decoding)
+
+        loss = self.loss(segmentation[0], y[:, 0:1, :, :])
+
+        # logging to tensorboard
+        self.log("val_loss", loss)
+        return loss
+
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.train_configs["learning-rate"]
