@@ -48,7 +48,7 @@ class SegmentationHead(torch.nn.Module):
         self,
         branches: Union[List[List[int]], List[Dict[str, Any]]],
         upsample_mode: str = "nearest",
-        scale_factor: float = 2.0,
+        scale_factor: float = 4.0,
         **kwargs
     ):
 
@@ -173,6 +173,7 @@ class SegmentationBranch(torch.nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
+        x = self.upsampling(x)
         for block in self.conv_blocks:
             x = block(x)
         return x

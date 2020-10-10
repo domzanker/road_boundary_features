@@ -53,13 +53,14 @@ class Decoder(Module):
 
     def forward(self, *features):
         # features = features[1:]
+        # [print(f.shape) for f in features]
         features = features[::-1]
 
         x = features[0]
         skips = features[1:]
 
         for i, block in enumerate(self.blocks):
-            skip = features[i] if i < len(skips) else None
+            skip = skips[i] if i < len(skips) else None
             x = block(x, skip)
         return x
 
@@ -75,7 +76,7 @@ class DecoderBlock(Module):
         dilation: Union[_size_2_t, List[_size_2_t]] = 0,
         activation: str = "relu",
         upsampling_mode: str = "nearest",
-        upsampling_factor: int = 2,
+        upsampling: Optional[_size_2_t] = 2,
         apply_instance_norm: bool = False,
     ):
         super(DecoderBlock, self).__init__()
@@ -107,8 +108,14 @@ class DecoderBlock(Module):
             ]
         )
         self.activate = activation_func(activation)
+        if isinstance(upsampling, list):
+            size = upsampling
+            factor = None
+        else:
+            size = None
+            factor = upsampling
         self.upsample = torch.nn.Upsample(
-            scale_factor=upsampling_factor, mode=upsampling_mode
+            size=size, scale_factor=factor, mode=upsampling_mode
         )
         if apply_instance_norm:
             self.instance_normalize = torch.nn.ModuleList(
