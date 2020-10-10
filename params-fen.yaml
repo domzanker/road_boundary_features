@@ -20,6 +20,8 @@ train:
         validation-interval: 10
         validation-batches: 10
 
+        logger-interval: 100
+
         checkpoint-interval: 1
 
 model:

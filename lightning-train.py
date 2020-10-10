@@ -6,6 +6,7 @@ from pathlib import Path
 from torch.utils.data.dataloader import DataLoader
 from utils.dataset import RoadBoundaryDataset
 from utils.feature_net import FeatureNet
+from pytorch_lightning.loggers import TensorBoardLogger
 
 
 def train(opt):
@@ -37,11 +38,15 @@ def train(opt):
 
     model = FeatureNet(configs=configs)
 
+    logger = TensorBoardLogger("data/tensorboard", opt.tag)
     trainer = pl.Trainer(
         gpus=1,
         max_epochs=configs["train"]["epochs"],
         limit_val_batches=configs["train"]["validation-batches"],
         val_check_interval=configs["train"]["validation-interval"],
+        logger=logger,
+        log_every_n_steps=configs["train"]["logger-interval"],
+        log_gpu_memory=True,
     )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 

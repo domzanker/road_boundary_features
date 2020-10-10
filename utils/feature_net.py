@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import torch
 from torch.nn import Module, Sequential
 from torch.nn.common_types import _size_2_t
+from torchvision.utils import make_grid
 
 from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
 from utils.losses import loss_func
@@ -63,6 +64,14 @@ class FeatureNet(pl.LightningModule):
 
         # logging to tensorboard
         self.log("train_loss", loss)
+        tensorboard = self.logger.experiment
+
+        # create grid
+        # log each encoding stage
+        # log out out
+        tensorboard.add_images("distance map", y[:, 0:1, :, :], dataformats="NCHW")
+        tensorboard.add_images("distance pred", segmentation[0])
+        tensorboard.add_images("input rgb", x[:, :3, :, :], dataformats="NCHW")
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -76,7 +85,12 @@ class FeatureNet(pl.LightningModule):
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
         # logging to tensorboard
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_epoch=True, logger=True)
+        tensorboard = self.logger.experiment
+
+        tensorboard.add_images("distance map", y[:, 0:1, :, :], dataformats="NCHW")
+        tensorboard.add_images("distance pred", segmentation[0])
+        tensorboard.add_images("input rgb", x[:, :3, :, :], dataformats="NCHW")
         return loss
 
     def configure_optimizers(self):
