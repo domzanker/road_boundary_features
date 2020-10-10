@@ -23,10 +23,11 @@ def train(opt):
         configs["train"]["batch-size"] = opt.batch_size
 
     if len(opt.gpu) == 1:
-        opt.gpu = opt.gpu[0]
         dist_backend = None
     else:
         dist_backend = "ddp"
+    if opt.gpu[0] == -1:
+        opt.gpu = -1
 
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
@@ -47,7 +48,7 @@ def train(opt):
     val_loader = DataLoader(
         val_dataset,
         batch_size=configs["train"]["batch-size"],
-        num_workers=2,
+        num_workers=3,
         pin_memory=True,
     )
 
