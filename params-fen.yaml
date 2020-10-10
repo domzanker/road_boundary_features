@@ -8,7 +8,7 @@ train:
         learning-rate: 0.1
         lr-decay: 0.9
         lr_decay_step_size: 3
-        batch-size: 2
+        batch-size: 12
         weight_decay: 0.0004
 
         loss: "mse"
