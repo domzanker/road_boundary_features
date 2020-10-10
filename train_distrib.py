@@ -413,6 +413,7 @@ def main(opt):
         configs = yaml.safe_load(f)
 
     visible_devices = ",".join(map(str, opt.gpu))
+    print(visible_devices)
     os.environ["CUDA_VISIBLE_DEVICES"] = visible_devices
 
     with idist.Parallel(
@@ -429,7 +430,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cpu_workers", type=int, default=10, help="number of cpu threads for loading"
     )
-    parser.add_argument("--gpu", type=list, default=[0, 1], help="gpu")
+    parser.add_argument("--gpu", type=int, default=0, nargs="+", help="gpu")
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
     parser.add_argument("--tag", type=str, default="training", help="")
     parser.add_argument("--resume", type=bool, default=False, help="")
