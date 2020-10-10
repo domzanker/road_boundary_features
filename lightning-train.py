@@ -15,6 +15,9 @@ def train(opt):
     with Path(opt.configs).open("rb") as f:
         configs = yaml.safe_load(f)
 
+    if opt.batch_size != 0:
+        configs["train"]["batch-size"] = opt.batch_size
+
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
@@ -53,7 +56,7 @@ def train(opt):
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
     if opt.resume_training:
         trainer = pl.Trainer(
-            gpus=1,
+            gpus=opt.gpu,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -65,7 +68,7 @@ def train(opt):
         )
     else:
         trainer = pl.Trainer(
-            gpus=1,
+            gpus=opt.gpu,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -82,7 +85,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
     )
-    parser.add_argument("--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("--gpu", type=int, default=0, nargs="+", help="gpu")
+    parser.add_argument(
+        "--batch_size", type=int, default=0, help="batch_size. this overrides configs"
+    )
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
     parser.add_argument("--tag", type=str, default="training", help="")
     parser.add_argument("--load_model", type=bool, default=False, help="")
