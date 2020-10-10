@@ -72,7 +72,7 @@ def train(local_rank, opt, configs, **kwargs):
     )
     train_loader = idist.auto_dataloader(
         train_dataset,
-        batch_size=configs["train"]["batch-size"],
+        batch_size=configs["train"]["batch-size"] * len(opt.gpu),
         shuffle=True,
         num_workers=opt.cpu_workers,
     )
