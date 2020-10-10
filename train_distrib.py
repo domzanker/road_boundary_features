@@ -206,56 +206,47 @@ def train(local_rank, opt, configs, **kwargs):
 
     # evaluator = Engine(valid_step)
     # define progress bar
+    progress_bar = ProgressBar(persist=True)
+    valid_bar = ProgressBar()
+    valid_bar.attach(train_evaluator)
+    valid_bar.attach(valid_evaluator)
+
+    RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
+    # RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
+    # RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
+    # RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
+
+    MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
+        train_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        train_evaluator, name="l_dist"
+    )
+    """
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        train_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        train_evaluator, name="l_dir"
+    )
+    """
+
+    MeanPairwiseDistance(p=2, output_transform=lambda x: [x[0], x[1]]).attach(
+        valid_evaluator, "mpd"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
+        valid_evaluator, name="l_dist"
+    )
+    """
+    RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
+        valid_evaluator, name="l_end"
+    )
+    RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
+        valid_evaluator, name="l_dir"
+    )
+    """
+
     if rank == 0:
-        progress_bar = ProgressBar(persist=True)
-        valid_bar = ProgressBar()
-        valid_bar.attach(train_evaluator)
-        valid_bar.attach(valid_evaluator)
-
-        RunningAverage(output_transform=lambda x: x[0]).attach(trainer, name="loss")
-        # RunningAverage(output_transform=lambda x: x[1]).attach(trainer, name="l_dist")
-        # RunningAverage(output_transform=lambda x: x[2]).attach(trainer, name="l_end")
-        # RunningAverage(output_transform=lambda x: x[3]).attach(trainer, name="l_dir")
-        GpuInfo().attach(trainer, name="gpu")
-        progress_bar.attach(
-            trainer,
-            metric_names=[
-                "loss",
-                "gpu:{} mem(%)".format(opt.gpu),
-                "gpu:{} util(%)".format(opt.gpu),
-            ],
-        )
-
-        MeanPairwiseDistance(p=4, output_transform=lambda x: [x[0], x[1]]).attach(
-            train_evaluator, "mpd"
-        )
-        RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
-            train_evaluator, name="l_dist"
-        )
-        """
-        RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
-            train_evaluator, name="l_end"
-        )
-        RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
-            train_evaluator, name="l_dir"
-        )
-        """
-
-        MeanPairwiseDistance(p=2, output_transform=lambda x: [x[0], x[1]]).attach(
-            valid_evaluator, "mpd"
-        )
-        RunningAverage(output_transform=lambda x: x[2]["dist_loss"]).attach(
-            valid_evaluator, name="l_dist"
-        )
-        """
-        RunningAverage(output_transform=lambda x: x[2]["end_loss"]).attach(
-            valid_evaluator, name="l_end"
-        )
-        RunningAverage(output_transform=lambda x: x[2]["dir_loss"]).attach(
-            valid_evaluator, name="l_dir"
-        )
-        """
-
         tb_logger = tensorboard_logger.TensorboardLogger(
             log_dir="data/tensorboard/dist_only/tb_logs_{}".format(opt.tag),
         )
@@ -317,59 +308,59 @@ def train(local_rank, opt, configs, **kwargs):
             """
             tb_logger.writer.add_image("rgb", rgb, global_step=glob_step)
 
-        @trainer.on(Events.EPOCH_COMPLETED)
-        @idist.one_rank_only()
-        def log_training_results(engine):
-            train_evaluator.run(train_loader, epoch_length=150, max_epochs=1)
-            metrics = train_evaluator.state.metrics
-            progress_bar.log_message(
-                "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
-                    engine.state.epoch, metrics["mpd"], metrics["l_dist"]
-                )
+    @trainer.on(Events.EPOCH_COMPLETED)
+    @idist.one_rank_only()
+    def log_training_results(engine):
+        train_evaluator.run(train_loader, epoch_length=150, max_epochs=1)
+        metrics = train_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
+                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
             )
-            """
-            progress_bar.log_message(
-                "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
-                    engine.state.epoch,
-                    metrics["mpd"],
-                    metrics["l_dist"],
-                    metrics["l_end"],
-                    metrics["l_dir"],
-                )
-            )
-            """
-
-        @trainer.on(Events.EPOCH_COMPLETED)
-        @idist.one_rank_only()
-        def log_validation_results(engine):
-            valid_evaluator.run(val_loader, epoch_length=150, max_epochs=1)
-            metrics = valid_evaluator.state.metrics
-            progress_bar.log_message(
-                "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
-                    engine.state.epoch, metrics["mpd"], metrics["l_dist"]
-                )
-            )
-            """
-            progress_bar.log_message(
-                "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
-                    engine.state.epoch,
-                    metrics["mpd"],
-                    metrics["l_dist"],
-                    metrics["l_end"],
-                    metrics["l_dir"],
-                )
-            )
-            """
-
-        to_save = {"model": model, "optimizer": optimizer, "trainer": trainer}
-        checkpoint_handler = Checkpoint(
-            to_save=to_save,
-            save_handler=DiskSaver(
-                "data/checkpoints", require_empty=False, create_dir=True
-            ),
-            filename_prefix=opt.tag,
-            n_saved=5,
         )
+        """
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
+            )
+        )
+        """
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    @idist.one_rank_only()
+    def log_validation_results(engine):
+        valid_evaluator.run(val_loader, epoch_length=150, max_epochs=1)
+        metrics = valid_evaluator.state.metrics
+        progress_bar.log_message(
+            "Trainings results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f}".format(
+                engine.state.epoch, metrics["mpd"], metrics["l_dist"]
+            )
+        )
+        """
+        progress_bar.log_message(
+            "Validation results - Epoch: {} Mean Pairwise Distance: {}  << distanceMap: {:.4f} endMap: {:.4f} directionMap: {:.4f}".format(
+                engine.state.epoch,
+                metrics["mpd"],
+                metrics["l_dist"],
+                metrics["l_end"],
+                metrics["l_dir"],
+            )
+        )
+        """
+
+    to_save = {"model": model, "optimizer": optimizer, "trainer": trainer}
+    checkpoint_handler = Checkpoint(
+        to_save=to_save,
+        save_handler=DiskSaver(
+            "data/checkpoints", require_empty=False, create_dir=True
+        ),
+        filename_prefix=opt.tag,
+        n_saved=5,
+    )
 
     def load_checkpoint(to_load):
 
@@ -398,8 +389,8 @@ def train(local_rank, opt, configs, **kwargs):
                 "resumed training from checkpoint: %s" % checkpoint_path
             )
 
-        load_checkpoint(to_load)
-
+    if rank == 0:
+        load_checkpoint(to_save)
         trainer.add_event_handler(
             Events.EPOCH_COMPLETED(every=configs["train"]["checkpoint-interval"]),
             checkpoint_handler,
@@ -416,7 +407,6 @@ def main(opt):
         configs = yaml.safe_load(f)
 
     visible_devices = ",".join(map(str, opt.gpu))
-    print(visible_devices)
     os.environ["CUDA_VISIBLE_DEVICES"] = visible_devices
 
     with idist.Parallel(
