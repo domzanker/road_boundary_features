@@ -27,7 +27,7 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision.utils import make_grid
 
 from utils.dataset import RoadBoundaryDataset
-from utils.losses import CombinedLoss
+from utils.losses import loss_func
 from utils.modules import FeatureExtrationNet
 from utils.modules import activation_func
 from utils.feature_net import FeatureNet
@@ -53,6 +53,7 @@ def train(opt):
         decoder=model_configs["decoder"],
         head=model_configs["head"],
     )
+    loss = loss_func(configs["train"]["loss"], **configs["train"]["loss_config"])
     model.to(device)
 
     # Get dataloader
@@ -100,9 +101,7 @@ def train(opt):
         predictions = model(imgs)
 
         # compute loss function
-        distLoss = torch.nn.functional.mse_loss(
-            predictions[0], targets[0], reduction="sum"
-        )
+        distLoss = loss(predictions[0], targets[0])
         """
         endLoss = torch.nn.functional.mse_loss(
             predictions[1], targets[1], reduction="sum"
@@ -150,9 +149,7 @@ def train(opt):
         predictions = model(imgs)
 
         # compute loss function
-        distLoss = torch.nn.functional.mse_loss(
-            predictions[0], targets[0], reduction="sum"
-        )
+        distLoss = loss(predictions[0], targets[0])
 
         """
         endLoss = torch.nn.functional.mse_loss(
