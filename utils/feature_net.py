@@ -28,7 +28,7 @@ class FeatureNet(pl.LightningModule):
             ),
             torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
-        if self.model_configs["use_custom_encoder"]:
+        if False:
             raise NotImplementedError
         else:
             self.encoder = Encoder(**self.model_configs["encoder"])
