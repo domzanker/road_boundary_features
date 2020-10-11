@@ -102,7 +102,7 @@ class RoadBoundaryDataset(Dataset):
         rgb = rgb / 255
 
         height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
-        height = height / height.max()
+        height = (height - height.min()) / height.max()
 
         end_points = self._to_tensor(
             complete_sample["end_points_map"].astype(np.float32)
