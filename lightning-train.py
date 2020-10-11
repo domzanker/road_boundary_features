@@ -71,7 +71,7 @@ def train(opt):
         trainer = pl.Trainer(
             gpus=opt.gpu,
             distributed_backend=dist_backend,
-            accumulate_grad_batches=12,
+            accumulate_grad_batches=4,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -81,14 +81,14 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
             callbacks=[gpustats, lr_monitor],
-            fast_dev_run=opt.test_run,
+            profile=opt.profile,
         )
     else:
         trainer = pl.Trainer(
-            gpus=opt.gpus,
+            gpus=opt.gpu,
             auto_select_gpus=True,
             distributed_backend=dist_backend,
-            accumulate_grad_batches=12,
+            accumulate_grad_batches=4,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -97,7 +97,7 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
-            fast_dev_run=opt.test_run,
+            profile=opt.profile,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
 
-    parser.add_argument("--test_run", type=bool, default=False, help="")
+    parser.add_argument("--proifle", type=bool, default=False, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
