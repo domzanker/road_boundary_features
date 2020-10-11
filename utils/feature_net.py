@@ -46,11 +46,9 @@ class FeatureNet(pl.LightningModule):
 
         self.train_mse = pl.metrics.MeanSquaredError()
         self.train_dist_accuracy = pl.metrics.Accuracy()
-        self.train_dist_precision = pl.metrics.Precision(1)
 
         self.val_mse = pl.metrics.MeanSquaredError()
         self.val_dist_accuracy = pl.metrics.Accuracy()
-        self.val_dist_precision = pl.metrics.Precision(1)
 
         self.save_hyperparameters()
 
@@ -77,12 +75,10 @@ class FeatureNet(pl.LightningModule):
         target = y[:, :1, :, :]
         self.train_mse(pred, target)
         self.train_dist_accuracy(pred, target)
-        self.train_dist_precision(pred, target)
         self.log_dict(
             {
                 "train_mse": self.train_mse,
                 "train_dist_accuracy": self.train_dist_accuracy,
-                "train_dist_precision": self.train_dist_precision,
             },
             on_step=True,
             on_epoch=False,
@@ -127,12 +123,10 @@ class FeatureNet(pl.LightningModule):
         target = y[:, :1, :, :]
         self.val_mse(pred, target)
         self.val_dist_accuracy(pred, target)
-        self.val_dist_precision(pred, target)
         self.log_dict(
             {
                 "val_mse": self.val_mse,
                 "val_dist_accuracy": self.val_dist_accuracy,
-                "val_dist_precision": self.val_dist_precision,
             },
             on_step=False,
             on_epoch=True,
