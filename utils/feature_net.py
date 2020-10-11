@@ -88,7 +88,7 @@ class FeatureNet(pl.LightningModule):
             rgb = x[:, :3, :, :].detach()
             tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
 
-        return loss
+            return loss
 
     def validation_step(self, batch, batch_idx):
 
