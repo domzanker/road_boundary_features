@@ -56,7 +56,7 @@ class FeatureNet(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        with torch.autograd.set_detect_anomalya():
+        with torch.autograd.set_detect_anomaly():
             x, y = batch
 
             prec = self.encoder_prec(x)
