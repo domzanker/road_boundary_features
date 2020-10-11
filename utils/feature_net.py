@@ -119,6 +119,7 @@ class FeatureNet(pl.LightningModule):
         }
 
     def validation_epoch_end(self, outputs):
+
         tensorboard = self.logger.experiment
         y = torch.cat([t["y"] for t in outputs])
         x = torch.cat([t["x"] for t in outputs])
@@ -161,6 +162,7 @@ class FeatureNet(pl.LightningModule):
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
+        tensorboard.flush()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
