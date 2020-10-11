@@ -158,6 +158,7 @@ class FeatureNet(pl.LightningModule):
         tensorboard.add_images(
             "valid distance pred",
             make_grid(pred[:64, :, :, :] * 255),
+            dataformats="CHW",
             global_step=self.trainer.global_step,
         )
 
