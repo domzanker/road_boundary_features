@@ -2,9 +2,11 @@ import pickle
 from pathlib import Path
 from typing import Callable, Tuple
 import numpy as np
+import cv2
 
 import torch
 from torch.utils.data import Dataset
+import torch.nn.functional as F
 from torchvision.transforms.functional import to_tensor
 import torchvision.transforms as vision_transforms
 
@@ -68,7 +70,7 @@ class RoadBoundaryDataset(Dataset):
         sample_file = self.index[indx]
 
         if not sample_file.is_file():
-            sleep(1.0)
+            sleep(0.01)
 
         with sample_file.open("rb") as f:
             complete_sample = pickle.load(f)
@@ -83,31 +85,19 @@ class RoadBoundaryDataset(Dataset):
             "inverse_distance_map": self.distance_map,
         }
         """
-        default_transforms = vision_transforms.Compose(
-            [
-                vision_transforms.ToPILImage(),
-                vision_transforms.Resize(size=self.image_size),
-                vision_transforms.ToTensor(),
-                vision_transforms.Normalize(mean=0.5, std=0.5),
-            ]
-        )
-
         assert complete_sample["road_direction_map"].shape[-1] == 2
         assert complete_sample["inverse_distance_map"].shape[-1] == 1
         assert complete_sample["end_points_map"].shape[-1] == 1
 
-        rgb = default_transforms(complete_sample["rgb"].astype(np.uint8))
-        height = default_transforms(complete_sample["lidar_height"].astype(np.uint8))
+        rgb = torch.Tensor(complete_sample["rgb"])
+        rgb = vision_transforms.functional.normalize(mean=0.5, std=0.5)
 
-        end_points = default_transforms(
-            complete_sample["end_points_map"].astype(np.uint8)
-        )
-        direction_map = default_transforms(
-            complete_sample["road_direction_map"].astype(np.uint8)
-        )
-        distance_map = default_transforms(
-            complete_sample["inverse_distance_map"].astype(np.uint8)
-        )
+        height = complete_sample["lidar_height"]
+
+        end_points = complete_sample["end_points_map"]
+        direction_map = complete_sample["road_direction_map"]
+
+        distance_map = complete_sample["inverse_distance_map"]
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
@@ -115,11 +105,13 @@ class RoadBoundaryDataset(Dataset):
 
         # convert to torch tensors with CHW
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
+        targets_torch = F.interpolate(targets_torch, size=self.image_size)
 
         if self.transform:
             rgb = self.transform(rgb)
 
         image_torch = torch.cat([rgb, height])
+        image_torch = F.interpolate(image_torch, size=self.image_size)
 
         assert targets_torch.shape[0] == 4
 
