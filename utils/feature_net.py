@@ -73,12 +73,10 @@ class FeatureNet(pl.LightningModule):
 
         pred = segmentation[0]
         target = y[:, :1, :, :]
-        self.train_mse(pred, target)
-        self.train_dist_accuracy(pred, target)
         self.log_dict(
             {
-                "train_mse": self.train_mse,
-                "train_dist_accuracy": self.train_dist_accuracy,
+                "train_mse": self.train_mse(pred, target),
+                "train_dist_accuracy": self.train_dist_accuracy(pred, target),
             },
             on_step=True,
             on_epoch=False,
@@ -121,12 +119,10 @@ class FeatureNet(pl.LightningModule):
 
         pred = segmentation[0]
         target = y[:, :1, :, :]
-        self.val_mse(pred, target)
-        self.val_dist_accuracy(pred, target)
         self.log_dict(
             {
-                "val_mse": self.val_mse,
-                "val_dist_accuracy": self.val_dist_accuracy,
+                "val_mse": self.val_mse(pred, target),
+                "val_dist_accuracy": self.val_dist_accuracy(pred, target),
             },
             on_step=False,
             on_epoch=True,
