@@ -65,6 +65,14 @@ class RoadBoundaryDataset(Dataset):
 
         return x
 
+    def _to_tensor(self, arr):
+        tensor = torch.Tensor(arr)
+        if tensor.ndimension() == 2:
+            tensor = tensor.unsqueeze(0)
+        else:
+            tensor = tensor.permute(2, 0, 1)
+        return tensor
+
     def __getitem__(self, indx: int):
 
         sample_file = self.index[indx]
@@ -89,15 +97,16 @@ class RoadBoundaryDataset(Dataset):
         assert complete_sample["inverse_distance_map"].shape[-1] == 1
         assert complete_sample["end_points_map"].shape[-1] == 1
 
-        rgb = torch.Tensor(complete_sample["rgb"])
+        # HWC -> CHW
+        rgb = self._to_tensor(complete_sample["rgb"]).permute(2, 0, 1)
         rgb = vision_transforms.functional.normalize(rgb, mean=0.5, std=0.5)
 
-        height = complete_sample["lidar_height"]
+        height = self._to_tensor(complete_sample["lidar_height"])
 
-        end_points = complete_sample["end_points_map"]
-        direction_map = complete_sample["road_direction_map"]
+        end_points = self._to_tensor(complete_sample["end_points_map"])
 
-        distance_map = complete_sample["inverse_distance_map"]
+        direction_map = self._to_tensor(complete_sample["road_direction_map"])
+        distance_map = self._to_tensor(complete_sample["inverse_distance_map"])
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
