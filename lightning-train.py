@@ -85,7 +85,8 @@ def train(opt):
         )
     else:
         trainer = pl.Trainer(
-            gpus=opt.gpu,
+            gpus=opt.gpus,
+            auto_select_gpus=True,
             distributed_backend=dist_backend,
             accumulate_grad_batches=12,
             max_epochs=configs["train"]["epochs"],
