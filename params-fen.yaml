@@ -15,9 +15,9 @@ train:
 
         loss: "mse"
         loss-args: 
-                reduction: "sum"
+                reduction: "mean"
 
-        epochs: 15
+        epochs: 30
         validation-interval: 1000
         validation-batches: 10
 
