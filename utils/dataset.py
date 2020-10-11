@@ -114,13 +114,17 @@ class RoadBoundaryDataset(Dataset):
 
         # convert to torch tensors with CHW
         targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
-        targets_torch = F.interpolate(targets_torch, size=self.image_size)
+        targets_torch = F.interpolate(
+            targets_torch[None, :, :, :], size=self.image_size
+        ).squeeze(dim=0)
 
         if self.transform:
             rgb = self.transform(rgb)
 
         image_torch = torch.cat([rgb, height])
-        image_torch = F.interpolate(image_torch, size=self.image_size)
+        image_torch = F.interpolate(
+            image_torch[None, :, :, :], size=self.image_size
+        ).squeeze(dim=0)
 
         assert targets_torch.shape[0] == 4
 
