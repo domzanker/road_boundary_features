@@ -80,6 +80,7 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
             callbacks=[gpustats, lr_monitor],
+            fast_dev_run=opt.test_run,
         )
     else:
         trainer = pl.Trainer(
@@ -93,6 +94,7 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
+            fast_dev_run=opt.test_run,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
