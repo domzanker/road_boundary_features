@@ -134,7 +134,7 @@ class FeatureNet(pl.LightningModule):
 
         return {"loss": loss, "y": y, "pred": segmentation[0].detach(), "x": x}
 
-    def on_validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         tensorboard = self.logger.experiment
         y = torch.stack([t["y"] for t in outputs])
         x = torch.stack([t["x"] for t in outputs])
