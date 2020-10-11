@@ -71,6 +71,7 @@ class FeatureNet(pl.LightningModule):
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
+        """
         pred = segmentation[0]
         target = y[:, :1, :, :]
         self.log_dict(
@@ -81,6 +82,7 @@ class FeatureNet(pl.LightningModule):
             on_step=True,
             on_epoch=False,
         )
+        """
         # logging to tensorboard
         self.log("train_loss", loss)
 
@@ -96,7 +98,9 @@ class FeatureNet(pl.LightningModule):
         segmentation = self.head(decoding)
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
+        return loss
 
+        """
         pred = segmentation[0]
         target = y[:, :1, :, :]
         self.log_dict(
@@ -158,6 +162,7 @@ class FeatureNet(pl.LightningModule):
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
+        """
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
