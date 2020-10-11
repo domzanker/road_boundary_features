@@ -121,6 +121,7 @@ class RoadBoundaryDataset(Dataset):
         if self.transform:
             rgb = self.transform(rgb)
 
+        print(rgb.shape)
         print(height.shape)
         image_torch = torch.cat([rgb, height])
         image_torch = F.interpolate(
