@@ -111,8 +111,13 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", type=bool, default=False, help="")
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
+
+    parser.add_argument("--test_run", bool, default=False, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
+
+    if opt.test_run:
+        opt.tag = "test"
 
     train(opt)
