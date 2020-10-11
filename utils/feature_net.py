@@ -98,11 +98,9 @@ class FeatureNet(pl.LightningModule):
         segmentation = self.head(decoding)
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
-        return loss
 
-        """
-        pred = segmentation[0]
-        target = y[:, :1, :, :]
+        pred = segmentation[0].detach()
+        target = y[:, :1, :, :].detach()
         self.log_dict(
             {
                 "val_mse": self.val_mse(pred, target),
@@ -113,7 +111,7 @@ class FeatureNet(pl.LightningModule):
         )
 
         return {
-            "loss": loss,
+            "loss": loss.detach(),
             "y": y.detach(),
             "pred": segmentation[0].detach(),
             "x": x.detach(),
@@ -162,7 +160,6 @@ class FeatureNet(pl.LightningModule):
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
-        """
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
