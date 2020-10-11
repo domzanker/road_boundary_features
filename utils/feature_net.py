@@ -139,7 +139,6 @@ class FeatureNet(pl.LightningModule):
         y = torch.cat([t["y"] for t in outputs])
         x = torch.cat([t["x"] for t in outputs])
         pred = torch.cat([t["pred"] for t in outputs])
-        avg_loss = torch.stack([t["loss"] for t in outputs]).mean()
 
         # log out out
         y_ = y[:, 0:1, :, :].detach()
@@ -178,7 +177,6 @@ class FeatureNet(pl.LightningModule):
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
-        return {"loss": avg_loss}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
