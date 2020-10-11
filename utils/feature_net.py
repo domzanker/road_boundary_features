@@ -136,10 +136,10 @@ class FeatureNet(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         tensorboard = self.logger.experiment
-        y = torch.stack([t["y"] for t in outputs])
-        x = torch.stack([t["x"] for t in outputs])
-        pred = torch.stack([t["pred"] for t in outputs])
-        avg_loss = torch.stack([t["loss"] for t in outputs]).mean()
+        y = torch.cat([t["y"] for t in outputs])
+        x = torch.cat([t["x"] for t in outputs])
+        pred = torch.cat([t["pred"] for t in outputs])
+        avg_loss = torch.cat([t["loss"] for t in outputs]).mean()
 
         # log out out
         y_ = y[:, 0:1, :, :].detach()
@@ -147,7 +147,7 @@ class FeatureNet(pl.LightningModule):
         y_ /= y_.max()
         tensorboard.add_images(
             "valid distance map",
-            make_grid(y_ * 255),
+            make_grid(y_[:64, :, :, :] * 255),
             dataformats="NCHW",
             global_step=self.trainer.global_step,
         )
@@ -157,7 +157,7 @@ class FeatureNet(pl.LightningModule):
         pred /= pred.max()
         tensorboard.add_images(
             "valid distance pred",
-            make_grid(pred * 255),
+            make_grid(pred[:64, :, :, :] * 255),
             global_step=self.trainer.global_step,
         )
 
@@ -166,14 +166,14 @@ class FeatureNet(pl.LightningModule):
         lid /= lid.max()
         tensorboard.add_images(
             "valid input lidar",
-            make_grid((lid + 1) * 255),
+            make_grid((lid[:64, :, :, :] + 1) * 255),
             dataformats="NCHW",
             global_step=self.trainer.global_step,
         )
         rgb = x[:, :3, :, :].detach()
         tensorboard.add_images(
             "valid input rgb",
-            make_grid(rgb * 255),
+            make_grid(rgb[:64, :, :, :] * 255),
             dataformats="NCHW",
             global_step=self.trainer.global_step,
         )
