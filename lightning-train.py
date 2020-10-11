@@ -117,9 +117,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
 
-    parser.add_argument(
-        "--profile", type=bool, action="store_true", default=False, help=""
-    )
+    parser.add_argument("--profile", action="store_true", default=False, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
