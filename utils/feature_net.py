@@ -44,6 +44,14 @@ class FeatureNet(pl.LightningModule):
         )
         self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
+        self.train_mse = pl.metrics.MeanSquaredError()
+        self.train_dist_accuracy = pl.metrics.classification.Accuracy()
+        self.train_dist_precision = pl.metrics.classification.Precision(1)
+
+        self.val_mse = pl.metrics.MeanSquaredError()
+        self.val_dist_accuracy = pl.metrics.classification.Accuracy()
+        self.val_dist_precision = pl.metrics.classification.Precision(1)
+
         self.save_hyperparameters()
 
     def forward(self, x):
@@ -65,11 +73,22 @@ class FeatureNet(pl.LightningModule):
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
+        pred = segmentation[0]
+        target = y[:, :1, :, :]
+        self.train_mse(pred, target)
+        self.train_dist_accuracy(pred, target)
+        self.train_dist_precision(pred, target)
+        self.log_dict(
+            {
+                "train_mse": self.train_mse,
+                "train_dist_accuracy": self.train_dist_accuracy,
+                "train_dist_precision": self.train_dist_precision,
+            },
+            on_step=True,
+            on_epoch=False,
+        )
         # logging to tensorboard
-        self.log("train_loss", loss, logger=True, on_step=True)
-
-        tensorboard = self.logger.experiment
-        tensorboard.add_scalar("train_loss", loss)
+        self.log("train_loss", loss)
 
         """
         # log out out
@@ -104,27 +123,67 @@ class FeatureNet(pl.LightningModule):
 
         loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
+        pred = segmentation[0]
+        target = y[:, :1, :, :]
+        self.val_mse(pred, target)
+        self.val_dist_accuracy(pred, target)
+        self.val_dist_precision(pred, target)
+        self.log_dict(
+            {
+                "val_mse": self.val_mse,
+                "val_dist_accuracy": self.val_dist_accuracy,
+                "val_dist_precision": self.val_dist_precision,
+            },
+            on_step=False,
+            on_epoch=True,
+        )
+
+        return {"loss": loss, "y": y, "pred": segmentation[0].detach(), "x": x}
+
+    def on_validation_epoch_end(self, outputs):
         tensorboard = self.logger.experiment
+        y = torch.stack([t["y"] for t in outputs])
+        x = torch.stack([t["x"] for t in outputs])
+        pred = torch.stack([t["pred"] for t in outputs])
+        avg_loss = torch.stack([t["loss"] for t in outputs]).mean()
+
         # log out out
         y_ = y[:, 0:1, :, :].detach()
         y_ -= y_.min()
         y_ /= y_.max()
-        tensorboard.add_images("valid distance map", y_ * 255, dataformats="NCHW")
+        tensorboard.add_images(
+            "valid distance map",
+            make_grid(y_ * 255),
+            dataformats="NCHW",
+            global_step=self.trainer.global_step,
+        )
 
-        pred = segmentation[0].detach()
+        pred = pred.detach()
         pred = pred - pred.min()
         pred /= pred.max()
-        tensorboard.add_images("valid distance pred", pred * 255)
+        tensorboard.add_images(
+            "valid distance pred",
+            make_grid(pred * 255),
+            global_step=self.trainer.global_step,
+        )
 
         lid = x[:, 3:, :, :].detach()
         lid -= lid.min()
         lid /= lid.max()
-        tensorboard.add_images("valid input lidar", (lid + 1) * 255, dataformats="NCHW")
+        tensorboard.add_images(
+            "valid input lidar",
+            make_grid((lid + 1) * 255),
+            dataformats="NCHW",
+            global_step=self.trainer.global_step,
+        )
         rgb = x[:, :3, :, :].detach()
-        tensorboard.add_images("valid input rgb", rgb * 255, dataformats="NCHW")
-        # logging to tensorboard
-        self.log("val_loss", loss, on_epoch=True, logger=True)
-        return loss
+        tensorboard.add_images(
+            "valid input rgb",
+            make_grid(rgb * 255),
+            dataformats="NCHW",
+            global_step=self.trainer.global_step,
+        )
+        return {"loss": avg_loss}
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(

@@ -136,7 +136,7 @@ class RoadBoundaryDataset(Dataset):
             ).squeeze(dim=0)
 
         image_torch = vision_transforms.functional.normalize(
-            image_torch, mean=(0, 0, 0, 0.5), std=(0.5, 0.5, 0.5, 0.5)
+            image_torch, mean=(0, 0, 0, 0.5), std=(1, 1, 1, 0.5)
         )
 
         assert targets_torch.shape[0] == 4
