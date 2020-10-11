@@ -98,7 +98,7 @@ class RoadBoundaryDataset(Dataset):
         assert complete_sample["end_points_map"].shape[-1] == 1
 
         # HWC -> CHW
-        rgb = self._to_tensor(complete_sample["rgb"]).permute(2, 0, 1)
+        rgb = self._to_tensor(complete_sample["rgb"])
         rgb = vision_transforms.functional.normalize(rgb, mean=0.5, std=0.5)
 
         height = self._to_tensor(complete_sample["lidar_height"])
@@ -121,8 +121,6 @@ class RoadBoundaryDataset(Dataset):
         if self.transform:
             rgb = self.transform(rgb)
 
-        print(rgb.shape)
-        print(height.shape)
         image_torch = torch.cat([rgb, height])
         image_torch = F.interpolate(
             image_torch[None, :, :, :], size=self.image_size
