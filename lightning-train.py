@@ -122,7 +122,4 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
 
-    if opt.test_run:
-        opt.tag = "test"
-
     train(opt)
