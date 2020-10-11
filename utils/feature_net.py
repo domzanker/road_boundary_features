@@ -84,26 +84,6 @@ class FeatureNet(pl.LightningModule):
         # logging to tensorboard
         self.log("train_loss", loss)
 
-        """
-        # log out out
-        y_ = y[:, 0:1, :, :].detach()
-        y_ = y_ - y_.min()
-        y_ = y_ / y_.max()
-        tensorboard.add_images("train distance map", y_ * 255, dataformats="NCHW")
-
-        pred = segmentation[0].detach()
-        pred = pred - pred.min()
-        pred = pred / pred.max()
-        tensorboard.add_images("train distance pred", pred * 255)
-
-        lid = x[:, 3:, :, :].detach()
-        lid = lid - lid.min()
-        lid = lid / lid.max()
-        tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
-        rgb = x[:, :3, :, :].detach()
-        tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
-        """
-
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -128,7 +108,12 @@ class FeatureNet(pl.LightningModule):
             on_epoch=True,
         )
 
-        return {"loss": loss, "y": y, "pred": segmentation[0].detach(), "x": x}
+        return {
+            "loss": loss,
+            "y": y.detach(),
+            "pred": segmentation[0].detach(),
+            "x": x.detach(),
+        }
 
     def validation_epoch_end(self, outputs):
         tensorboard = self.logger.experiment
