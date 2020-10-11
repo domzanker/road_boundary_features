@@ -103,6 +103,7 @@ class FeatureNet(pl.LightningModule):
         target = y[:, :1, :, :].detach()
         self.log_dict(
             {
+                "val_loss": loss,
                 "val_mse": self.val_mse(pred, target),
                 "val_dist_accuracy": self.val_dist_accuracy(pred, target),
             },
