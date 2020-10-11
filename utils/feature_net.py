@@ -139,7 +139,7 @@ class FeatureNet(pl.LightningModule):
         y = torch.cat([t["y"] for t in outputs])
         x = torch.cat([t["x"] for t in outputs])
         pred = torch.cat([t["pred"] for t in outputs])
-        avg_loss = torch.cat([t["loss"] for t in outputs]).mean()
+        avg_loss = torch.stack([t["loss"] for t in outputs]).mean()
 
         # log out out
         y_ = y[:, 0:1, :, :].detach()
