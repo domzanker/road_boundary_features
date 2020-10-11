@@ -98,16 +98,22 @@ class RoadBoundaryDataset(Dataset):
         assert complete_sample["end_points_map"].shape[-1] == 1
 
         # HWC -> CHW
-        rgb = self._to_tensor(complete_sample["rgb"])
-        rgb = vision_transforms.functional.normalize(rgb, mean=0.5, std=0.5)
+        rgb = self._to_tensor(complete_sample["rgb"].astype(np.float32))
+        rgb = rgb / 255
 
-        height = self._to_tensor(complete_sample["lidar_height"])
-        height = vision_transforms.functional.normalize(height, mean=0.5, std=0.5)
+        height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
+        height = height / height.max()
 
-        end_points = self._to_tensor(complete_sample["end_points_map"])
+        end_points = self._to_tensor(
+            complete_sample["end_points_map"].astype(np.float32)
+        )
 
-        direction_map = self._to_tensor(complete_sample["road_direction_map"])
-        distance_map = self._to_tensor(complete_sample["inverse_distance_map"])
+        direction_map = self._to_tensor(
+            complete_sample["road_direction_map"].astype(np.float32)
+        )
+        distance_map = self._to_tensor(
+            complete_sample["inverse_distance_map"].astype(np.float32)
+        )
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
@@ -128,6 +134,10 @@ class RoadBoundaryDataset(Dataset):
             image_torch = F.interpolate(
                 image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
+
+        image_torch = vision_transforms.functional.normalize(
+            image_torch, mean=(0, 0, 0, 0.5), std=(0.5, 0.5, 0.5, 0.5)
+        )
 
         assert targets_torch.shape[0] == 4
 

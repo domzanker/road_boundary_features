@@ -121,7 +121,7 @@ class FeatureNet(pl.LightningModule):
         lid /= lid.max()
         tensorboard.add_images("valid input lidar", (lid + 1) * 255, dataformats="NCHW")
         rgb = x[:, :3, :, :].detach()
-        tensorboard.add_images("valid input rgb", (rgb + 1) * 255, dataformats="NCHW")
+        tensorboard.add_images("valid input rgb", rgb * 255, dataformats="NCHW")
         # logging to tensorboard
         self.log("val_loss", loss, on_epoch=True, logger=True)
         return loss
