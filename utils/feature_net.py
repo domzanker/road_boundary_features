@@ -45,12 +45,12 @@ class FeatureNet(pl.LightningModule):
         self.loss = loss_func(self.train_configs["loss"], **loss_args)
 
         self.train_mse = pl.metrics.MeanSquaredError()
-        self.train_dist_accuracy = pl.metrics.classification.Accuracy()
-        self.train_dist_precision = pl.metrics.classification.Precision(1)
+        self.train_dist_accuracy = pl.metrics.Accuracy()
+        self.train_dist_precision = pl.metrics.Precision(1)
 
         self.val_mse = pl.metrics.MeanSquaredError()
-        self.val_dist_accuracy = pl.metrics.classification.Accuracy()
-        self.val_dist_precision = pl.metrics.classification.Precision(1)
+        self.val_dist_accuracy = pl.metrics.Accuracy()
+        self.val_dist_precision = pl.metrics.Precision(1)
 
         self.save_hyperparameters()
 
