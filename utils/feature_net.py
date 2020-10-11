@@ -69,6 +69,9 @@ class FeatureNet(pl.LightningModule):
         self.log("train_loss", loss, logger=True, on_step=True)
 
         tensorboard = self.logger.experiment
+        tensorboard.add_scalar("train_loss", loss)
+
+        """
         # log out out
         y_ = y[:, 0:1, :, :].detach()
         y_ = y_ - y_.min()
@@ -86,12 +89,14 @@ class FeatureNet(pl.LightningModule):
         tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
         rgb = x[:, :3, :, :].detach()
         tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
+        """
 
         return loss
 
     def validation_step(self, batch, batch_idx):
 
         x, y = batch
+
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
@@ -114,9 +119,9 @@ class FeatureNet(pl.LightningModule):
         lid = x[:, 3:, :, :].detach()
         lid -= lid.min()
         lid /= lid.max()
-        tensorboard.add_images("valid input lidar", lid * 255, dataformats="NCHW")
+        tensorboard.add_images("valid input lidar", (lid + 1) * 255, dataformats="NCHW")
         rgb = x[:, :3, :, :].detach()
-        tensorboard.add_images("valid input rgb", rgb, dataformats="NCHW")
+        tensorboard.add_images("valid input rgb", (rgb + 1) * 255, dataformats="NCHW")
         # logging to tensorboard
         self.log("val_loss", loss, on_epoch=True, logger=True)
         return loss

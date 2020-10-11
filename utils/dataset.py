@@ -102,6 +102,7 @@ class RoadBoundaryDataset(Dataset):
         rgb = vision_transforms.functional.normalize(rgb, mean=0.5, std=0.5)
 
         height = self._to_tensor(complete_sample["lidar_height"])
+        height = vision_transforms.functional.normalize(height, mean=0.5, std=0.5)
 
         end_points = self._to_tensor(complete_sample["end_points_map"])
 

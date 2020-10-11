@@ -1,6 +1,7 @@
 dataset:
         #size: [640, 360]
-        size: [1280, 720]
+        #size: [1280, 720]
+        size: null
         train-dataset: "data/nuscenes-complete-15x10/train"
         valid-dataset: "data/nuscenes-complete-15x10/valid"
         test-dataset: "data/nuscenes-complete-15x10/test"
@@ -37,8 +38,8 @@ model:
                 use_custom: True
                 #encoder_name: "resnet34"
                 encoder_depth: 4
-                in_channels: [64, 128, 256, 512]
-                out_channels: [128, 256, 512, 1024]
+                in_channels: [64, 96, 128, 256]
+                out_channels: [96, 128, 256, 512]
                 kernel_size: 3
                 dilation: 2
 
@@ -48,24 +49,15 @@ model:
                 blocks:
                         [
                                 {
-                                in_channels: [1024, 1024, 512, 512],
-                                out_channels: [1024, 512, 512, 512],
-                                kernel_size: [1, 3, 1, 1],
-                                stride: 1,
-                                dilation: 1,
-                                activation: "relu",
-                                upsampling: [40, 23],
-                                apply_instance_norm: True},
-                          
-                                {
                                 in_channels: [512, 512, 256, 256],
                                 out_channels: [512, 256, 256, 256],
                                 kernel_size: [1, 3, 1, 1],
                                 stride: 1,
                                 dilation: 1,
                                 activation: "relu",
-                                upsampling: [80, 45],
+                                upsampling: [24, 16],
                                 apply_instance_norm: True},
+                          
                                 {
                                 in_channels: [256, 256, 128, 128],
                                 out_channels: [256, 128, 128, 128],
@@ -73,15 +65,25 @@ model:
                                 stride: 1,
                                 dilation: 1,
                                 activation: "relu",
+                                upsampling: [47, 32],
                                 apply_instance_norm: True},
                                 {
-                                in_channels: [128, 128, 64, 64],
-                                out_channels: [128, 64, 64, 64],
+                                in_channels: [128, 128, 96, 96],
+                                out_channels: [128, 96, 96, 96],
                                 kernel_size: [1, 3, 1, 1],
                                 stride: 1,
                                 dilation: 1,
                                 activation: "relu",
-                                upsampling: 4,
+                                upsampling: [94, 63],
+                                apply_instance_norm: True},
+                                {
+                                in_channels: [96, 96, 64, 64],
+                                out_channels: [96, 64, 64, 64],
+                                kernel_size: [1, 3, 1, 1],
+                                stride: 1,
+                                dilation: 1,
+                                activation: "relu",
+                                upsampling: [374, 249],
                                 apply_instance_norm: True}
                         ]
         head: 
