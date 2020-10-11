@@ -56,39 +56,38 @@ class FeatureNet(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        with torch.autograd.set_detect_anomaly(True):
-            x, y = batch
+        x, y = batch
 
-            prec = self.encoder_prec(x)
-            encoding = self.encoder(prec)
-            decoding = self.decoder(*encoding)
-            segmentation = self.head(decoding)
+        prec = self.encoder_prec(x)
+        encoding = self.encoder(prec)
+        decoding = self.decoder(*encoding)
+        segmentation = self.head(decoding)
 
-            loss = self.loss(segmentation[0], y[:, 0:1, :, :])
+        loss = self.loss(segmentation[0], y[:, 0:1, :, :])
 
-            # logging to tensorboard
-            self.log("train_loss", loss, logger=True, on_step=True)
+        # logging to tensorboard
+        self.log("train_loss", loss, logger=True, on_step=True)
 
-            tensorboard = self.logger.experiment
-            # log out out
-            y_ = y[:, 0:1, :, :].detach()
-            y_ -= y_.min()
-            y_ /= y_.max()
-            tensorboard.add_images("train distance map", y_ * 255, dataformats="NCHW")
+        tensorboard = self.logger.experiment
+        # log out out
+        y_ = y[:, 0:1, :, :].detach()
+        y_ = y_ - y_.min()
+        y_ = y_ / y_.max()
+        tensorboard.add_images("train distance map", y_ * 255, dataformats="NCHW")
 
-            pred = segmentation[0].detach()
-            pred = pred - pred.min()
-            pred /= pred.max()
-            tensorboard.add_images("train distance pred", pred * 255)
+        pred = segmentation[0].detach()
+        pred = pred - pred.min()
+        pred = pred / pred.max()
+        tensorboard.add_images("train distance pred", pred * 255)
 
-            lid = x[:, 3:, :, :].detach()
-            lid -= lid.min()
-            lid /= lid.max()
-            tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
-            rgb = x[:, :3, :, :].detach()
-            tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
+        lid = x[:, 3:, :, :].detach()
+        lid = lid - lid.min()
+        lid = lid / lid.max()
+        tensorboard.add_images("train input lidar", lid * 255, dataformats="NCHW")
+        rgb = x[:, :3, :, :].detach()
+        tensorboard.add_images("train input rgb", rgb, dataformats="NCHW")
 
-            return loss
+        return loss
 
     def validation_step(self, batch, batch_idx):
 
