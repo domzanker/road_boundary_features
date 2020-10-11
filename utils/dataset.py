@@ -90,7 +90,7 @@ class RoadBoundaryDataset(Dataset):
         assert complete_sample["end_points_map"].shape[-1] == 1
 
         rgb = torch.Tensor(complete_sample["rgb"])
-        rgb = vision_transforms.functional.normalize(mean=0.5, std=0.5)
+        rgb = vision_transforms.functional.normalize(rgb, mean=0.5, std=0.5)
 
         height = complete_sample["lidar_height"]
 
