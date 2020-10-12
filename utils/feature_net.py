@@ -37,7 +37,7 @@ class FeatureNet(pl.LightningModule):
             self.decoder = AEDecoder(**self.model_configs["decoder"])
 
             self.head = Sequential(
-                torch.nn.Upsample(scale_factor=4),
+                torch.nn.Upsample(scale_factor=2),
                 Conv2dAuto(
                     kernel_size=7,
                     in_channels=64,
