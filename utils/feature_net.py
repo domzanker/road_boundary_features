@@ -34,12 +34,15 @@ class FeatureNet(pl.LightningModule):
             self.encoder = Encoder(**self.model_configs["encoder"])
 
         if pretrain:
-            self.encoder_prec = torch.nn.Identity()
             self.decoder = AEDecoder(**self.model_configs["decoder"])
-            self.head = Conv2dAuto(
-                kernel=7,
-                input_channels=self.model_configs["head"]["in_channels"][0],
-                out_channels=4,
+
+            self.head = Sequential(
+                torch.nn.Upsample(scale_factor=4),
+                Conv2dAuto(
+                    kernel_size=7,
+                    in_channels=self.model_configs["head"][0]["in_channels"][0],
+                    out_channels=self.model_configs["input_channels"],
+                ),
             )
         else:
             self.decoder = Decoder(**self.model_configs["decoder"])
