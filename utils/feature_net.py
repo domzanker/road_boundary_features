@@ -141,6 +141,8 @@ class FeatureNet(pl.LightningModule):
         )
 
         pred = pred.detach()
+        if self.pretrain:
+            pred = pred[:, :3, :, :]
         pred = pred - pred.min()
         pred /= pred.max()
         tensorboard.add_images(
