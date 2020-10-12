@@ -1,12 +1,12 @@
 # linknet assumes data to be 640 x 340
 input_channels: 4
+use_custom: False
 name: "linknet"
 
 input_size: [640, 340]
 
-encoder_decoder:
+model:
         # set False for pre-defined networks
-        use_custom: False
         encoder_name: "resnet34"
         encoder_weights: "imagenet"
         encoder_depth: 3

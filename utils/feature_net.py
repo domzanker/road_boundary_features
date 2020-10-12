@@ -48,7 +48,7 @@ class FeatureNet(pl.LightningModule):
             # as linknet uses another image size, we use prec to downsample
             self.encoder_prec = Interpolate(size=configs["input_size"], mode="bilinear")
 
-            model = smp.Linknet(**self.model_configs)
+            model = smp.Linknet(**self.model_configs["model"])
             self.encoder = model.encoder
             self.decoder = model.decoder
             self.head = model.segmentation_head
