@@ -428,7 +428,7 @@ class Interpolate(Module):
         recompute_scale_factor=None,
     ):
         super(Interpolate, self).__init__()
-        self.size = (size,)
+        self.size = size
         self.scale_factor = scale_factor
         self.mode = mode
         self.align_corners = align_corners
