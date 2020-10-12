@@ -16,6 +16,7 @@ import pytorch_lightning as pl
 class FeatureNet(pl.LightningModule):
     def __init__(self, configs: Dict[str, Any], *, pretrain: bool = False):
         super(FeatureNet, self).__init__()
+
         self.pretrain = pretrain
 
         self.model_configs = configs["model"]
@@ -35,15 +36,8 @@ class FeatureNet(pl.LightningModule):
 
         if pretrain:
             self.decoder = AEDecoder(**self.model_configs["decoder"])
+            self.head = AEHead()
 
-            self.head = Sequential(
-                torch.nn.Upsample(scale_factor=2),
-                Conv2dAuto(
-                    kernel_size=7,
-                    in_channels=64,
-                    out_channels=self.model_configs["input_channels"],
-                ),
-            )
         else:
             self.decoder = Decoder(**self.model_configs["decoder"])
             self.head = SegmentationHead(**self.model_configs["head"])
@@ -383,6 +377,29 @@ class AEDecoder(Decoder):
         for i, block in enumerate(self.blocks):
             x = block(x)
         return x
+
+
+class AEHead(Module):
+    def __init__(
+        self,
+        scale: int = 2,
+        kernel_size: int = 7,
+        in_channels: int = 64,
+        out_channels: int = 4,
+    ):
+        super(AEHead, self).__init__()
+        self.head = Sequential(
+            torch.nn.Upsample(scale_factor=scale),
+            Conv2dAuto(
+                kernel_size=kernel_size,
+                in_channels=in_channels,
+                out_channels=out_channels,
+            ),
+            activation_func("relu"),
+        )
+
+    def forward(self, x):
+        return [self.head(x)]
 
 
 if __name__ == "__main__":
