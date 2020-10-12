@@ -94,10 +94,12 @@ class FeatureNet(pl.LightningModule):
 
         loss = self.loss(segmentation, target)
 
+        """
         tb = self.logger.experiment
         tb.add_histogram(
             "rgb channel", x.detach(), global_step=self.trainer.global_step
         )
+        """
 
         # logging to tensorboard
         self.log("train_loss", loss)
