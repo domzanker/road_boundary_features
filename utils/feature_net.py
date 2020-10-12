@@ -96,13 +96,7 @@ class FeatureNet(pl.LightningModule):
 
         tb = self.logger.experiment
         tb.add_histogram(
-            "r channel", x[:, 0, :, :], global_step=self.trainer.global_step
-        )
-        tb.add_histogram(
-            "g channel", x[:, 1, :, :], global_step=self.trainer.global_step
-        )
-        tb.add_histogram(
-            "b channel", x[:, 2, :, :], global_step=self.trainer.global_step
+            "rgb channel", x.detach(), global_step=self.trainer.global_step
         )
 
         # logging to tensorboard
