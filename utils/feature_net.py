@@ -48,6 +48,7 @@ class FeatureNet(pl.LightningModule):
 
             model = smp.Linknet(**self.model_configs["model"])
             self.encoder = model.encoder
+
             self.decoder = model.decoder
             self.head = model.segmentation_head
 
@@ -90,7 +91,7 @@ class FeatureNet(pl.LightningModule):
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation[0], target)
+        loss = self.loss(segmentation, target)
 
         # logging to tensorboard
         self.log("train_loss", loss)
@@ -110,9 +111,9 @@ class FeatureNet(pl.LightningModule):
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation[0], target)
+        loss = self.loss(segmentation, target)
 
-        pred = segmentation[0][:, :1, :, :].detach()
+        pred = segmentation[:, :1, :, :].detach()
         tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
@@ -127,7 +128,7 @@ class FeatureNet(pl.LightningModule):
         return {
             "loss": loss.detach(),
             "y": y.detach(),
-            "pred": segmentation[0].detach(),
+            "pred": segmentation.detach(),
             "x": x.detach(),
         }
 

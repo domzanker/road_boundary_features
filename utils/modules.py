@@ -119,7 +119,7 @@ class SegmentationHead(torch.nn.Module):
         output = []
         for branch in self.branches:
             output.append(branch(x))
-        return output
+        return torch.stack(output, dim=1)
 
 
 class SegmentationBranch(torch.nn.Module):
