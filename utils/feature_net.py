@@ -45,7 +45,8 @@ class FeatureNet(pl.LightningModule):
 
             # TODO preprocessing_params
 
-            self.encoder_prec = torch.nn.Identity()
+            # as linknet uses another image size, we use prec to downsample
+            self.encoder_prec = Interpolate(size=configs["input_size"], mode="bilinear")
 
             model = smp.Linknet(**self.model_configs)
             self.encoder = model.encoder
@@ -413,6 +414,34 @@ class AEHead(Module):
 
     def forward(self, x):
         return [self.head(x)]
+
+
+class Interpolate(Module):
+    def __init__(
+        self,
+        input,
+        size=None,
+        scale_factor=None,
+        mode="nearest",
+        align_corners=None,
+        recompute_scale_factor=None,
+    ):
+        super(Interpolate, self).__init__()
+        self.size = (size,)
+        self.scale_factor = scale_factor
+        self.mode = mode
+        self.align_corners = align_corners
+        self.recompute_scale_factor = recompute_scale_factor
+
+    def forward(self, x):
+        return torch.nn.functional.interpolate(
+            x,
+            size=self.size,
+            scale_factor=self.scale_factor,
+            mode=self.mode,
+            align_corners=self.align_corners,
+            recompute_scale_factor=self.recompute_scale_factor,
+        )
 
 
 if __name__ == "__main__":

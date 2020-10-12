@@ -2,6 +2,8 @@
 input_channels: 4
 name: "linknet"
 
+input_size: [640, 340]
+
 encoder_decoder:
         # set False for pre-defined networks
         use_custom: False
