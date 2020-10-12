@@ -114,6 +114,7 @@ class RoadBoundaryDataset(Dataset):
         distance_map = self._to_tensor(
             complete_sample["inverse_distance_map"].astype(np.float32)
         )
+        distance_map = distance_map / distance_map.max()
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
