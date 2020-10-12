@@ -50,7 +50,7 @@ class FeatureNet(pl.LightningModule):
             self.encoder = model.encoder
 
             self.decoder = model.decoder
-            self.head = model.segmentation_head
+            self.head = Sequential(model.segmentation_head, activation_func("sigmoid"))
 
             if pretrain:
                 raise NotImplementedError
