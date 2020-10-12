@@ -30,6 +30,9 @@ def train(opt):
         else:
             dist_backend = None
 
+    if "input_size" in configs["model"]:
+        configs["dataset"]["size"] = configs["model"]["input_size"]
+
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
