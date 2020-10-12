@@ -64,7 +64,7 @@ def train(opt):
             raise NotImplementedError
         model = FeatureNet.load_from_checkpoint(checkpoint_file)
     else:
-        model = FeatureNet(configs=configs)
+        model = FeatureNet(configs=configs, pretrain=opt.autoencoder)
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
     if opt.resume_training:
@@ -118,6 +118,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str, default=None, help="")
 
     parser.add_argument("--profile", action="store_true", default=False, help="")
+    parser.add_argument("--autoencoder", action="store_true", default=False, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
