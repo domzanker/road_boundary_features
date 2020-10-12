@@ -168,6 +168,7 @@ class FeatureNet(pl.LightningModule):
             global_step=self.trainer.global_step,
         )
 
+        """
         lid = x[:, 3:, :, :].detach()
         lid -= lid.min()
         lid /= lid.max()
@@ -177,6 +178,7 @@ class FeatureNet(pl.LightningModule):
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
+        """
         rgb = x[:, :3, :, :].detach()
         tensorboard.add_images(
             "valid input rgb",
