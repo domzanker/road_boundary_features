@@ -71,6 +71,10 @@ def train(opt):
         model = FeatureNet(configs=configs, pretrain=opt.autoencoder)
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
+    if opt.overfit_batches:
+        overfit = 10
+    else:
+        overfit = None
     if opt.resume_training:
         trainer = pl.Trainer(
             gpus=opt.gpu,
@@ -103,8 +107,8 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
-            weights_summary=True,
-            overfit_batches=opt.overfit_batches,
+            weights_summary="full",
+            overfit_batches=overfit,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
