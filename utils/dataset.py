@@ -98,11 +98,11 @@ class RoadBoundaryDataset(Dataset):
         assert complete_sample["end_points_map"].shape[-1] == 1
 
         # HWC -> CHW
-        rgb = self._to_tensor(complete_sample["rgb"].astype(np.float32))
-        rgb = rgb / 255
+        rgb = complete_sample["rgb"].astype(np.uint8)
+        rgb = to_tensor(complete_sample)  # range [0,1]
 
         height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
-        height = (height - height.min()) / height.max()
+        height = height - height.min()  # range [0, inf]
 
         end_points = self._to_tensor(
             complete_sample["end_points_map"].astype(np.float32)
@@ -114,7 +114,8 @@ class RoadBoundaryDataset(Dataset):
         distance_map = self._to_tensor(
             complete_sample["inverse_distance_map"].astype(np.float32)
         )
-        distance_map = distance_map / distance_map.max()
+        distance_map = distance_map - distance_map.min()
+        distance_map = distance_map / distance_map.max()  # range [0, 1]
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
