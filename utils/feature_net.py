@@ -421,7 +421,6 @@ class AEHead(Module):
 class Interpolate(Module):
     def __init__(
         self,
-        input,
         size=None,
         scale_factor=None,
         mode="nearest",
