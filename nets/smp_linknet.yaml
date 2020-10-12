@@ -10,6 +10,6 @@ encoder_decoder:
         encoder_name: "resnet34"
         encoder_weights: "imagenet"
         encoder_depth: 3
-        classes: 64
+        classes: 2
         activation: "sigmoid"
         decoder_use_batchnorm: True
