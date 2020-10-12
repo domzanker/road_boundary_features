@@ -146,7 +146,7 @@ class FeatureNet(pl.LightningModule):
         tensorboard.add_images(
             "valid distance map",
             make_grid(y_[:64, :, :, :], normalize=True),
-            dataformat="CHW",
+            dataformats="CHW",
             global_step=self.trainer.global_step,
         )
 
@@ -158,7 +158,7 @@ class FeatureNet(pl.LightningModule):
         tensorboard.add_images(
             "valid distance pred",
             make_grid(pred[:64, :, :, :], normalize=True),
-            dataformat="CHW",
+            dataformats="CHW",
             global_step=self.trainer.global_step,
         )
 
@@ -168,14 +168,14 @@ class FeatureNet(pl.LightningModule):
         tensorboard.add_images(
             "valid input lidar",
             make_grid(lid[:64, :, :, :]),
-            dataformat="CHW",
+            dataformats="CHW",
             global_step=self.trainer.global_step,
         )
         rgb = x[:, :3, :, :].detach()
         tensorboard.add_images(
             "valid input rgb",
             make_grid(rgb[:64, :, :, :]),
-            dataformat="CHW",
+            dataformats="CHW",
             global_step=self.trainer.global_step,
         )
         tensorboard.flush()
