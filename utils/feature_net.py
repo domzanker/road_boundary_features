@@ -40,7 +40,7 @@ class FeatureNet(pl.LightningModule):
                 torch.nn.Upsample(scale_factor=4),
                 Conv2dAuto(
                     kernel_size=7,
-                    in_channels=self.model_configs["head"][0]["in_channels"][0],
+                    in_channels=64,
                     out_channels=self.model_configs["input_channels"],
                 ),
             )
