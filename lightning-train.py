@@ -86,6 +86,7 @@ def train(opt):
             resume_from_checkpoint=checkpoint_file,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
+            weights_summary=True,
         )
     else:
         trainer = pl.Trainer(
@@ -102,6 +103,8 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
+            weights_summary=True,
+            overfit_batches=opt.overfit_batches,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
@@ -123,6 +126,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
+    parser.add_argument(
+        "--overfit_batches", action="store_true", default=False, help=""
+    )
     # FIXME resume training
 
     opt = parser.parse_args()
