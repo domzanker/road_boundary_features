@@ -22,25 +22,38 @@ class FeatureNet(pl.LightningModule):
         self.model_configs = configs["model"]
         self.train_configs = configs["train"]
 
-        self.encoder_prec = Sequential(
-            Conv2dAuto(
-                in_channels=self.model_configs["input_channels"],
-                **self.model_configs["encoder_prec"],
-            ),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
-        if False:
-            raise NotImplementedError
-        else:
+        if self.model_configs["use_custom"]:
+
+            self.encoder_prec = Sequential(
+                Conv2dAuto(
+                    in_channels=self.model_configs["input_channels"],
+                    **self.model_configs["encoder_prec"],
+                ),
+                torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+            )
             self.encoder = Encoder(**self.model_configs["encoder"])
-
-        if pretrain:
-            self.decoder = AEDecoder(**self.model_configs["decoder"])
-            self.head = AEHead()
+            if pretrain:
+                self.decoder = AEDecoder(**self.model_configs["decoder"])
+                self.head = AEHead()
+            else:
+                self.decoder = Decoder(**self.model_configs["decoder"])
+                self.head = SegmentationHead(**self.model_configs["head"])
 
         else:
-            self.decoder = Decoder(**self.model_configs["decoder"])
-            self.head = SegmentationHead(**self.model_configs["head"])
+
+            import segmentation_models_pytorch as smp
+
+            # TODO preprocessing_params
+
+            self.encoder_prec = torch.nn.Identity()
+
+            model = smp.Linknet(**self.model_configs)
+            self.encoder = model.encoder
+            self.decoder = model.decoder
+            self.head = model.segmentation_head
+
+            if pretrain:
+                raise NotImplementedError
 
         loss_args = (
             self.train_configs["loss-args"]
@@ -173,7 +186,7 @@ class FeatureNet(pl.LightningModule):
         )
         lr_scheduler = {
             "scheduler": ReduceLROnPlateau(
-                optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=2
+                optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=1
             ),
             "monitor": "val_loss",
             "name": "plateau_scheduler",
