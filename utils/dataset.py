@@ -99,7 +99,7 @@ class RoadBoundaryDataset(Dataset):
 
         # HWC -> CHW
         rgb = complete_sample["rgb"].astype(np.uint8)
-        rgb = to_tensor(complete_sample)  # range [0,1]
+        rgb = to_tensor(rgb)  # range [0,1]
 
         height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
         height = height - height.min()  # range [0, inf]
