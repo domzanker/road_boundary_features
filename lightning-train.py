@@ -87,7 +87,6 @@ def train(opt):
             resume_from_checkpoint=checkpoint_file,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
-            weights_summary=True,
         )
     else:
         trainer = pl.Trainer(
@@ -104,7 +103,6 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
-            weights_summary="full",
             # overfit_batches=overfit,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
