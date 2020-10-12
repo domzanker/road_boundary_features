@@ -14,11 +14,9 @@ import pytorch_lightning as pl
 
 
 class FeatureNet(pl.LightningModule):
-    def __init__(
-        self,
-        configs: Dict[str, Any],
-    ):
+    def __init__(self, configs: Dict[str, Any], *, pretrain: bool = False):
         super(FeatureNet, self).__init__()
+        self.pretrain = pretrain
 
         self.model_configs = configs["model"]
         self.train_configs = configs["train"]
@@ -34,8 +32,18 @@ class FeatureNet(pl.LightningModule):
             raise NotImplementedError
         else:
             self.encoder = Encoder(**self.model_configs["encoder"])
-        self.decoder = Decoder(**self.model_configs["decoder"])
-        self.head = SegmentationHead(**self.model_configs["head"])
+
+        if pretrain:
+            self.encoder_prec = torch.nn.Identity()
+            self.decoder = AEDecoder(**self.model_configs["decoder"])
+            self.head = Conv2dAuto(
+                kernel=7,
+                input_channels=self.model_configs["head"]["in_channels"][0],
+                out_channels=4,
+            )
+        else:
+            self.decoder = Decoder(**self.model_configs["decoder"])
+            self.head = SegmentationHead(**self.model_configs["head"])
 
         loss_args = (
             self.train_configs["loss-args"]
@@ -63,26 +71,18 @@ class FeatureNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        target = y[:, 0:1, :, :]
+        if self.pretrain:
+            y = x
+            target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation[0], y[:, 0:1, :, :])
+        loss = self.loss(segmentation[0], target)
 
-        """
-        pred = segmentation[0]
-        target = y[:, :1, :, :]
-        self.log_dict(
-            {
-                "train_mse": self.train_mse(pred, target),
-                "train_dist_accuracy": self.train_dist_accuracy(pred, target),
-            },
-            on_step=True,
-            on_epoch=False,
-        )
-        """
         # logging to tensorboard
         self.log("train_loss", loss)
 
@@ -91,21 +91,25 @@ class FeatureNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         x, y = batch
+        target = y[:, 0:1, :, :]
+        if self.pretrain:
+            y = x
+            target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation[0], y[:, 0:1, :, :])
+        loss = self.loss(segmentation[0], target)
 
         pred = segmentation[0].detach()
-        target = y[:, :1, :, :].detach()
+        tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
                 "val_loss": loss,
-                "val_mse": self.val_mse(pred, target),
-                "val_dist_accuracy": self.val_dist_accuracy(pred, target),
+                "val_mse": self.val_mse(pred, tar),
+                "val_dist_accuracy": self.val_dist_accuracy(pred, tar),
             },
             on_step=False,
             on_epoch=True,
@@ -359,6 +363,20 @@ class EncoderBlock(Module):
     def forward(self, x):
         x = self.head_block(x)
         x = self.tail(x)
+        return x
+
+
+class AEDecoder(Decoder):
+    def __init__(self, *args, **kwargs):
+        super(AEDecoder, self).__init__(*args, **kwargs)
+
+    def forward(self, *features):
+        # features = features[1:]
+        # [print(f.shape) for f in features]
+        features = features[::-1]
+        x = features[0]
+        for i, block in enumerate(self.blocks):
+            x = block(x)
         return x
 
 
