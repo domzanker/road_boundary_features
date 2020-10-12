@@ -100,7 +100,7 @@ class FeatureNet(pl.LightningModule):
 
         loss = self.loss(segmentation[0], target)
 
-        pred = segmentation[0].detach()
+        pred = segmentation[0][:, :1, :, :].detach()
         tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
