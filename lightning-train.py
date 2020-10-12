@@ -13,11 +13,12 @@ from pytorch_lightning.callbacks import (
     GPUStatsMonitor,
     LearningRateMonitor,
 )
+from utils.yaml import Loader
 
 
 def train(opt):
     with Path(opt.configs).open("rb") as f:
-        configs = yaml.safe_load(f)
+        configs = yaml.load(f, Loader)
 
     if opt.batch_size != 0:
         configs["train"]["batch-size"] = opt.batch_size
