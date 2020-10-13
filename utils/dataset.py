@@ -41,7 +41,6 @@ class RoadBoundaryDataset(Dataset):
 
         self.image_size = image_size
         super().__init__()
-        self.first
 
     def __len__(self):
         return len(self.index)
