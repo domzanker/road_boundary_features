@@ -115,7 +115,7 @@ class RoadBoundaryDataset(Dataset):
             complete_sample["inverse_distance_map"].astype(np.float32)
         )
         distance_map = distance_map - distance_map.min()
-        distance_map = distance_map / distance_map.max()  # range [0, 1]
+        distance_map = distance_map / (distance_map.max() + 1e-12)  # range [0, 1]
         assert torch.isfinite(distance_map).all()
         assert torch.isfinite(rgb).all()
 
