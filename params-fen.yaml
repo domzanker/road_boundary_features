@@ -18,10 +18,10 @@ train:
                 reduction: "mean"
 
         epochs: 30
-        validation-interval: 1000
+        validation-interval: 500
         validation-batches: 10
 
-        logger-interval: 100
+        logger-interval: 50
 
         checkpoint-interval: 1
 
