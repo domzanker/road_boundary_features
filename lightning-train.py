@@ -93,7 +93,7 @@ def train(opt):
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
 
-    if opt.find_lr and os.environ("LOCAL_RANK") == 0:
+    if opt.find_lr and os.environ["LOCAL_RANK"] == 0:
         suggested_lr, fig = get_learning_rate_suggestion(model, train_loader)
         print("Using suggested learning rate of : ", suggested_lr)
         configs["train"]["learning-rate"] = suggested_lr
