@@ -81,8 +81,6 @@ class FeatureNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        self.log("x finite", torch.isfinite(x).all(), on_step=True, prog_bar=True)
-        self.log("y finite", torch.isfinite(y).all(), on_step=True, prog_bar=True)
         target = y[:, 0:1, :, :]
         if self.pretrain:
             y = x

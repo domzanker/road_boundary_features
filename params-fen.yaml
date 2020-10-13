@@ -25,6 +25,6 @@ train:
 
         checkpoint-interval: 1
 
-model: !include nets/feature_net.yaml
+model: !include nets/smp_linknet.yaml
         
                 
