@@ -41,6 +41,7 @@ class RoadBoundaryDataset(Dataset):
 
         self.image_size = image_size
         super().__init__()
+        self.first
 
     def __len__(self):
         return len(self.index)
@@ -116,13 +117,15 @@ class RoadBoundaryDataset(Dataset):
         )
         distance_map = distance_map - distance_map.min()
         distance_map = distance_map / distance_map.max()  # range [0, 1]
+        assert torch.isfinite(distance_map).all()
 
         assert end_points.shape[0] == 1
         assert direction_map.shape[0] == 2
         assert distance_map.shape[0] == 1
 
         # convert to torch tensors with CHW
-        targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
+        # targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
+        targets_torch = distance_map
         if self.image_size is not None:
             targets_torch = F.interpolate(
                 targets_torch[None, :, :, :], size=self.image_size, mode="bicubic"
@@ -138,7 +141,7 @@ class RoadBoundaryDataset(Dataset):
             ).squeeze(dim=0)
 
         image_torch = vision_transforms.functional.normalize(
-            image_torch, mean=(0, 0, 0, 0.5), std=(1, 1, 1, 0.5)
+            image_torch, mean=(0, 0, 0, 0), std=(1, 1, 1, 1)
         )
 
         assert targets_torch.shape[0] == 4
