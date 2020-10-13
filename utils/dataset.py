@@ -128,16 +128,17 @@ class RoadBoundaryDataset(Dataset):
         targets_torch = distance_map
         if self.image_size is not None:
             targets_torch = F.interpolate(
-                targets_torch[None, :, :, :], size=self.image_size, mode="bicubic"
+                targets_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
         if self.transform:
             rgb = self.transform(rgb)
 
-        image_torch = torch.cat([rgb, height])
+        # image_torch = torch.cat([rgb, height])
+        image_torch = rgb
         if self.image_size is not None:
             image_torch = F.interpolate(
-                image_torch[None, :, :, :], size=self.image_size, mode="bicubic"
+                image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
         image_torch = vision_transforms.functional.normalize(
