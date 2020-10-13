@@ -145,6 +145,6 @@ class RoadBoundaryDataset(Dataset):
             image_torch, mean=(0, 0, 0), std=(1, 1, 1)
         )
 
-        assert targets_torch.shape[0] == 4
+        # assert targets_torch.shape[0] == 4
 
         return (image_torch, targets_torch)
