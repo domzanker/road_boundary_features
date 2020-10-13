@@ -3,13 +3,14 @@ input_channels: 4
 use_custom: False
 name: "linknet"
 
-input_size: [640, 340]
+input_size: [672, 336] # for 4 layer resnet: /112
 
 model:
         # set False for pre-defined networks
         encoder_name: "resnet34"
         encoder_weights: "imagenet"
-        encoder_depth: 3
-        classes: 2
+        encoder_depth: 4
+        input_size: 4
+        classes: 1
         activation: "sigmoid"
         decoder_use_batchnorm: True

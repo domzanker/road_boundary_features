@@ -52,6 +52,11 @@ class FeatureNet(pl.LightningModule):
             self.decoder = model.decoder
             self.head = Sequential(model.segmentation_head, activation_func("sigmoid"))
 
+            self.preprocessing_params = smp.encoders.get_preprocessing_params(
+                self.model_configs["model"]["encoder_name"],
+                self.model_configs["model"]["encoder_weights"],
+            )
+
             if pretrain:
                 raise NotImplementedError
 
@@ -152,7 +157,7 @@ class FeatureNet(pl.LightningModule):
         y_ /= y_.max()
         tensorboard.add_images(
             "valid distance map",
-            make_grid(y_[:64, :, :, :], normalize=True),
+            make_grid(y_[:25, :, :, :], normalize=True, nrow=5),
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
@@ -161,10 +166,10 @@ class FeatureNet(pl.LightningModule):
         if self.pretrain:
             pred = pred[:, :3, :, :]
         pred = pred - pred.min()
-        pred /= pred.max()
+        pred /= pred.max() + 1e-12
         tensorboard.add_images(
             "valid distance pred",
-            make_grid(pred[:64, :, :, :], normalize=True),
+            make_grid(pred[:25, :, :, :], normalize=True, nrow=5),
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
@@ -183,7 +188,7 @@ class FeatureNet(pl.LightningModule):
         rgb = x[:, :3, :, :].detach()
         tensorboard.add_images(
             "valid input rgb",
-            make_grid(rgb[:64, :, :, :]),
+            make_grid(rgb[:15, :, :, :], nrow=5),
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
