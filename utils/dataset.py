@@ -102,7 +102,8 @@ class RoadBoundaryDataset(Dataset):
         rgb = to_tensor(rgb)  # range [0,1]
 
         height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
-        height = height - height.min()  # range [0, inf]
+        height = height - height.min()  # range [0, 1]
+        height = height / (height.max() + 1e-12)
 
         end_points = self._to_tensor(
             complete_sample["end_points_map"].astype(np.float32)
@@ -134,15 +135,14 @@ class RoadBoundaryDataset(Dataset):
         if self.transform:
             rgb = self.transform(rgb)
 
-        # image_torch = torch.cat([rgb, height])
-        image_torch = rgb
+        image_torch = torch.cat([rgb, height])
         if self.image_size is not None:
             image_torch = F.interpolate(
                 image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
         image_torch = vision_transforms.functional.normalize(
-            image_torch, mean=(0, 0, 0), std=(1, 1, 1)
+            image_torch, mean=(0, 0, 0, 0), std=(1, 1, 1, 1)
         )
 
         # assert targets_torch.shape[0] == 4
