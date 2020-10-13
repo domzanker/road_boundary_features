@@ -130,7 +130,7 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
-            overfit_batches=100,
+            # overfit_batches=100,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
