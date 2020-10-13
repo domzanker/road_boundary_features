@@ -17,6 +17,7 @@ from utils.yaml import Loader
 import segmentation_models_pytorch as smp
 
 
+"""
 def get_learning_rate_suggestion(model, data_loader):
     lr_trainer = pl.Trainer(accumulate_grad_batches=2)
 
@@ -28,6 +29,7 @@ def get_learning_rate_suggestion(model, data_loader):
     lr_trainer.accelerator_backend.teardown()
 
     return suggestion, plot
+"""
 
 
 def train(opt):
@@ -95,12 +97,14 @@ def train(opt):
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
 
+    """
     if opt.find_lr and os.environ.get("LOCAL_RANK", 0) == 0:
         suggested_lr, fig = get_learning_rate_suggestion(model, train_loader)
         print("Using suggested learning rate of : ", suggested_lr)
         configs["train"]["learning-rate"] = suggested_lr
         logger.log_graph(fig)
-        logger.flush()
+        logger.experiment.flush()
+    """
 
     if opt.resume_training:
         trainer = pl.Trainer(
