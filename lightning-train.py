@@ -18,12 +18,14 @@ import segmentation_models_pytorch as smp
 
 
 def get_learning_rate_suggestion(model, data_loader):
-    lr_trainer = pl.Trainer()
+    lr_trainer = pl.Trainer(accumulate_grad_batches=2)
 
     lr_finder = lr_trainer.tuner.lr_find(model=model, train_dataloader=data_loader)
 
     suggestion = lr_finder.suggestion()
     plot = lr_finder.plot()
+
+    lr_trainer.accelerator_backend.teardown()
 
     return suggestion, plot
 
@@ -98,6 +100,7 @@ def train(opt):
         print("Using suggested learning rate of : ", suggested_lr)
         configs["train"]["learning-rate"] = suggested_lr
         logger.log_graph(fig)
+        logger.flush()
 
     if opt.resume_training:
         trainer = pl.Trainer(
@@ -141,6 +144,9 @@ if __name__ == "__main__":
         "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
     )
     parser.add_argument("--gpu", type=int, default=0, nargs="+", help="gpu")
+    parser.add_argument(
+        "--accumulate_grad_batches", type=int, default=3, help="accumulate_grad_batches"
+    )
     parser.add_argument(
         "--batch_size", type=int, default=0, help="batch_size. this overrides configs"
     )
