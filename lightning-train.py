@@ -14,6 +14,7 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 from utils.yaml import Loader
+import segmentation_models_pytorch as smp
 
 
 def train(opt):
@@ -32,10 +33,18 @@ def train(opt):
 
     if "input_size" in configs["model"]:
         configs["dataset"]["size"] = configs["model"]["input_size"]
+    if not configs["model"]["use_custom"]:
+        preprocessing_params = smp.encoders.get_preprocessing_params(
+            configs["model"]["model"]["encoder_name"],
+            configs["model"]["model"]["encoder_weights"],
+        )
+    else:
+        preprocessing_params = None
 
     train_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
+        transform=preprocessing_params,
     )
     train_loader = DataLoader(
         train_dataset,
@@ -48,6 +57,7 @@ def train(opt):
     val_dataset = RoadBoundaryDataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
+        transform=preprocessing_params,
     )
     val_loader = DataLoader(
         val_dataset,

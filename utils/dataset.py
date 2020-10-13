@@ -35,6 +35,7 @@ class RoadBoundaryDataset(Dataset):
                 self.index.append(entry)
 
         if transform is not None:
+            self.transform_params = transform
             self.transform = partial(self._preproc, **transform)
         else:
             self.transform = None
@@ -141,9 +142,12 @@ class RoadBoundaryDataset(Dataset):
                 image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
-        image_torch = vision_transforms.functional.normalize(
-            image_torch, mean=(0, 0, 0, 0), std=(1, 1, 1, 1)
-        )
+        if self.transform is not None:
+            mean = self.transform_params["mean"]
+            std = self.transform_params["std"]
+            image_torch[:3, :, :] = vision_transforms.functional.normalize(
+                image_torch[:3, :, :], mean=mean, std=std
+            )
 
         # assert targets_torch.shape[0] == 4
 
