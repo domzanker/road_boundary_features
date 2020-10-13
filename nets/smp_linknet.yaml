@@ -10,7 +10,7 @@ model:
         encoder_name: "resnet34"
         encoder_weights: "imagenet"
         encoder_depth: 4
-        input_channels: 4
+        in_channels: 4
         classes: 1
         activation: "sigmoid"
         decoder_use_batchnorm: True
