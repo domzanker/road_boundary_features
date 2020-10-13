@@ -22,6 +22,8 @@ class FeatureNet(pl.LightningModule):
         self.model_configs = configs["model"]
         self.train_configs = configs["train"]
 
+        self.learning_rate = self.train_configs["learning-rate"]
+
         if self.model_configs["use_custom"]:
 
             self.encoder_prec = Sequential(
@@ -195,9 +197,7 @@ class FeatureNet(pl.LightningModule):
         tensorboard.flush()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.train_configs["learning-rate"]
-        )
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
         lr_scheduler = {
             "scheduler": ReduceLROnPlateau(
                 optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=1
