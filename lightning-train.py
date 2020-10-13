@@ -17,6 +17,17 @@ from utils.yaml import Loader
 import segmentation_models_pytorch as smp
 
 
+def get_learning_rate_suggestion(model, data_loader):
+    lr_trainer = pl.Trainer()
+
+    lr_finder = lr_trainer.tuner.lr_find(model=model, train_dataloader=data_loader)
+
+    suggestion = lr_finder.suggestion()
+    plot = lr_finder.plot()
+
+    return suggestion, plot
+
+
 def train(opt):
     with Path(opt.configs).open("rb") as f:
         configs = yaml.load(f, Loader)
@@ -82,6 +93,12 @@ def train(opt):
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
 
+    if opt.find_lr:
+        suggested_lr, fig = get_learning_rate_suggestion(model, train_loader)
+        print("Using suggested learning rate of : %s", suggested_lr)
+        configs["train"]["learning-rate"]
+        logger.log_graph(fig)
+
     if opt.resume_training:
         trainer = pl.Trainer(
             gpus=opt.gpu,
@@ -103,7 +120,7 @@ def train(opt):
             gpus=opt.gpu,
             auto_select_gpus=True,
             distributed_backend=dist_backend,
-            accumulate_grad_batches=4,
+            accumulate_grad_batches=2,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -113,7 +130,7 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[gpustats, lr_monitor],
             profiler=opt.profile,
-            # overfit_batches=overfit,
+            overfit_batches=100,
         )
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
@@ -135,9 +152,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
-    parser.add_argument(
-        "--overfit_batches", action="store_true", default=False, help=""
-    )
+    parser.add_argument("--find_lr", action="store_true", default=False, help="")
     # FIXME resume training
 
     opt = parser.parse_args()
