@@ -7,7 +7,7 @@ from pathlib import Path
 from torch.utils.data.dataloader import DataLoader
 from utils.dataset import RoadBoundaryDataset
 from utils.feature_net import FeatureNet
-from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from pytorch_lightning.callbacks import (
     ModelCheckpoint,
     GPUStatsMonitor,
@@ -40,7 +40,9 @@ def train(opt):
         configs["train"]["batch-size"] = opt.batch_size
 
     dist_backend = "ddp"
-    if len(opt.gpu) == 1:
+    if opt.gpu == 0:
+        pass
+    elif len(opt.gpu) == 1:
         if opt.gpu[0] == -1:
             opt.gpu = -1
         else:
@@ -95,7 +97,12 @@ def train(opt):
     else:
         model = FeatureNet(configs=configs, pretrain=opt.autoencoder)
 
-    logger = TensorBoardLogger("data/tensorboard", opt.tag)
+    # logger = TensorBoardLogger("data/tensorboard", opt.tag)
+    logger = CometLogger(
+        api_key="XswlQnMv5LzM9TBUd35eHroUj",
+        project_name="road-boundary-features",
+        experiment_name=opt.tag,
+    )
 
     """
     if opt.find_lr and os.environ.get("LOCAL_RANK", 0) == 0:

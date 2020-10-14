@@ -11,12 +11,15 @@ def angle_map(vector_map):
     angles_ = angles_.astype(np.uint8)
     angles_ = np.transpose(angles_, (0, 2, 3, 1))
     batch = [
-        cv2.applyColorMap(angles_[i, :, :, :], cv2.COLORMAP_JET)
+        cv2.cvtColor(
+            cv2.applyColorMap(angles_[i, :, :, :], cv2.COLORMAP_TURBO),
+            cv2.COLOR_BGR2RGB,
+        )
         for i in range(angles_.shape[0])
     ]
     batch = np.stack(batch, axis=0)
     batch = np.transpose(batch, (0, 3, 1, 2))
-    return torch.Tensor(batch)
+    return torch.Tensor(batch / 255)
 
 
 def to_tensorboard(img: torch.Tensor):
@@ -39,5 +42,16 @@ def _normalize(img):
 
 
 if __name__ == "__main__":
-    ba = torch.rand(10, 2, 500, 700)
-    a = angle_map(ba)
+    import matplotlib.pyplot as plt
+
+    x = torch.ones(10, 1, 500, 700) * 0.5
+    y = torch.ones(10, 1, 500, 700) * 0.5
+
+    y[:, :, :100, :] = -0.75
+    x[:, :, 400:, :] = 0
+
+    a = angle_map(torch.cat([x, y], axis=1))  # , out_type=torch.)
+
+    fig, ax = plt.subplots()
+    ax.imshow(a[0].permute(1, 2, 0))
+    plt.show()

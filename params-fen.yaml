@@ -18,13 +18,13 @@ train:
                 reduction: "mean"
 
         epochs: 30
-        validation-interval: 500
-        validation-batches: 10
+        validation-interval: 10
+        validation-batches: 1
 
-        logger-interval: 50
+        logger-interval: 5
 
         checkpoint-interval: 1
 
-model: !include nets/smp_linknet.yaml
+model: !include nets/feature_net.yaml
         
                 
