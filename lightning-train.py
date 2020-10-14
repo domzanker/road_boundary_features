@@ -97,12 +97,7 @@ def train(opt):
     else:
         model = FeatureNet(configs=configs, pretrain=opt.autoencoder)
 
-    # logger = TensorBoardLogger("data/tensorboard", opt.tag)
-    logger = CometLogger(
-        api_key="XswlQnMv5LzM9TBUd35eHroUj",
-        project_name="road-boundary-features",
-        experiment_name=opt.tag,
-    )
+    logger = TensorBoardLogger("data/tensorboard", opt.tag)
 
     """
     if opt.find_lr and os.environ.get("LOCAL_RANK", 0) == 0:

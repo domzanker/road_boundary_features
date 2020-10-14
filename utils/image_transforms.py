@@ -28,11 +28,26 @@ def to_tensorboard(img: torch.Tensor):
     return img * 255
 
 
-def apply_colormap(img, colormap=cv2.COLORMAP_JET):
-    if img.ndimension() == 3:
-        return cv2.applyColorMap(img, colormap)
-    elif img.ndimension() == 4 and img.shape[1] == 1:
-        return cv2.applyColorMap()
+def apply_colormap(img, colormap=cv2.COLORMAP_TURBO):
+    img = img.numpy()
+    img = img * 255
+    if img.ndim == 4:
+        img = np.transpose(img, (0, 2, 3, 1)).astype("uint8")
+        batch = [
+            cv2.cvtColor(cv2.applyColorMap(img[i], colormap), cv2.COLOR_BGR2RGB)
+            for i in range(img.shape[0])
+        ]
+        img_c = np.stack(batch, axis=0)
+        img_c = np.transpose(img_c, (0, 3, 1, 2))
+    elif img.ndim == 3:
+        img = np.transpose(img, (1, 2, 0)).astype("uint8")
+        img_c = np.stack(
+            cv2.cvtColor(cv2.applyColorMap(img, colormap), cv2.COLOR_BGR2RGB), axis=0
+        )
+        img_c = np.transpose(img_c, (2, 0, 1))
+    else:
+        raise AttributeError
+    return torch.Tensor(img_c / 255)
 
 
 def _normalize(img):
@@ -51,7 +66,10 @@ if __name__ == "__main__":
     x[:, :, 400:, :] = 0
 
     a = angle_map(torch.cat([x, y], axis=1))  # , out_type=torch.)
+    a = apply_colormap(x[0])
+    print(a.shape)
 
     fig, ax = plt.subplots()
-    ax.imshow(a[0].permute(1, 2, 0))
+    ax.imshow(a.permute(1, 2, 0))
+    # ax.imshow(a[0].permute(1, 2, 0))
     plt.show()

@@ -12,7 +12,7 @@ from utils.losses import loss_func
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
-from utils.image_transforms import angle_map
+from utils.image_transforms import angle_map, apply_colormap
 
 
 class FeatureNet(pl.LightningModule):
@@ -91,58 +91,56 @@ class FeatureNet(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        with self.logger.experiment.train():
-            x, y = batch
-            target = y[:, 0:1, :, :]
-            if self.pretrain:
-                y = x
-                target = y
+        x, y = batch
+        target = y[:, 0:1, :, :]
+        if self.pretrain:
+            y = x
+            target = y
 
-            prec = self.encoder_prec(x)
-            encoding = self.encoder(prec)
-            decoding = self.decoder(*encoding)
-            segmentation = self.head(decoding)
+        prec = self.encoder_prec(x)
+        encoding = self.encoder(prec)
+        decoding = self.decoder(*encoding)
+        segmentation = self.head(decoding)
 
-            loss = self.loss(segmentation, target)
+        loss = self.loss(segmentation, target)
 
-            """
-            tb = self.logger.experiment
-            tb.add_histogram(
-                "rgb channel", x.detach(), global_step=self.trainer.global_step
-            )
-            """
+        """
+        tb = self.logger.experiment
+        tb.add_histogram(
+            "rgb channel", x.detach(), global_step=self.trainer.global_step
+        )
+        """
 
-            # logging to tensorboard
-            self.log("train_loss", loss)
+        # logging to tensorboard
+        self.log("train_loss", loss)
 
         return loss
 
     def validation_step(self, batch, batch_idx):
-        with self.logger.experiment.validate():
-            x, y = batch
-            target = y[:, 0:1, :, :]
-            if self.pretrain:
-                y = x
-                target = y
+        x, y = batch
+        target = y[:, 0:1, :, :]
+        if self.pretrain:
+            y = x
+            target = y
 
-            prec = self.encoder_prec(x)
-            encoding = self.encoder(prec)
-            decoding = self.decoder(*encoding)
-            segmentation = self.head(decoding)
+        prec = self.encoder_prec(x)
+        encoding = self.encoder(prec)
+        decoding = self.decoder(*encoding)
+        segmentation = self.head(decoding)
 
-            loss = self.loss(segmentation, target)
+        loss = self.loss(segmentation, target)
 
-            pred = segmentation[:, :1, :, :].detach()
-            tar = y[:, :1, :, :].detach()
-            self.log_dict(
-                {
-                    "val_loss": loss,
-                    "val_mse": self.val_mse(pred, tar),
-                    "val_dist_accuracy": self.val_dist_accuracy(pred, tar),
-                },
-                on_step=False,
-                on_epoch=True,
-            )
+        pred = segmentation[:, :1, :, :].detach()
+        tar = y[:, :1, :, :].detach()
+        self.log_dict(
+            {
+                "val_loss": loss,
+                "val_mse": self.val_mse(pred, tar),
+                "val_dist_accuracy": self.val_dist_accuracy(pred, tar),
+            },
+            on_step=False,
+            on_epoch=True,
+        )
 
         return {
             "loss": loss.detach(),
@@ -153,110 +151,104 @@ class FeatureNet(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
 
-        with self.logger.experiment.validate():
-            experiment = self.logger.experiment
-            y = torch.cat([t["y"] for t in outputs])
-            x = torch.cat([t["x"] for t in outputs])
-            pred = torch.cat([t["pred"] for t in outputs])
+        experiment = self.logger.experiment
+        y = torch.cat([t["y"] for t in outputs])
+        x = torch.cat([t["x"] for t in outputs])
+        pred = torch.cat([t["pred"] for t in outputs])
 
+        # log out out
+        if not self.pretrain:
+            dist = y[:, 0:1, :, :].detach()
+            experiment.add_image(
+                "distance map",
+                image_data=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+
+            end = y[:, 1:2, :, :].detach()
+            experiment.add_image(
+                img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
+                tag="end map",
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+
+            direc = y[:, 2:4, :, :].detach()
+            experiment.add_image(
+                img_tensor=make_grid(
+                    angle_map(apply_colormap(direc[:25, :, :, :])), nrow=5
+                ),
+                tag="direction map",
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+
+            pred = pred.detach()
+            if self.pretrain:
+                pred = pred[:, :3, :, :]
             # log out out
-            if not self.pretrain:
-                dist = y[:, 0:1, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(dist[:5, :, :, :], normalize=True, nrow=5),
-                    name="valid distance map",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    image_colormap="turbo",
-                )
+            dist = pred[:, 0:1, :, :].detach()
+            # TODO Turbo colormap
+            experiment.add_image(
+                img_tensor=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
+                tag="distance pred",
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
 
-                end = y[:, 1:2, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(end[:5, :, :, :], normalize=True, nrow=5),
-                    name="end map",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    image_colormap="turbo",
-                )
+            """
+            end = pred[:, 1:2, :, :].detach()
+            experiment.add_image(
+                img_tensor=make_grid(apply_colormap(end[:5, :, :, :]), nrow=5),
+                tag="end pred",
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
 
-                direc = y[:, 2:4, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(
-                        angle_map(direc[:5, :, :, :]), normalize=True, nrow=5
-                    ),
-                    name="direction map",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    # image_colormap="turbo",
-                )
+            direc = pred[:, 2:4, :, :].detach()
+            experiment.add_image(
+                img_tensor=make_grid(
+                    angle_map(direc[:5, :, :, :]),nrow=5
+                ),
+                tag="direction pred",
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            """
 
-                pred = pred.detach()
-                if self.pretrain:
-                    pred = pred[:, :3, :, :]
-                # log out out
-                dist = pred[:, 0:1, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(dist[:5, :, :, :], normalize=True, nrow=5),
-                    name="distance pred",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    image_colormap="turbo",
-                )
+            lid = x[:, 3:, :, :].detach()
+            lid -= lid.min()
+            lid /= lid.max()
+            experiment.add_image(
+                tag="valid input lidar",
+                img_tensor=make_grid(lid[:5, :, :, :]),
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            rgb = x[:, :3, :, :].detach()
+            experiment.add_image(
+                tag="valid input rgb",
+                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+        else:
+            rgb = x[:, :3, :, :].detach()
+            experiment.add_image(
+                tag="valid input rgb",
+                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
 
-                """
-                end = pred[:, 1:2, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(end[:5, :, :, :], normalize=True, nrow=5),
-                    name="end pred",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    image_colormap="turbo",
-                )
-
-                direc = pred[:, 2:4, :, :].detach()
-                experiment.log_image(
-                    image_data=make_grid(
-                        angle_map(direc[:5, :, :, :]), normalize=True, nrow=5
-                    ),
-                    name="direction pre",
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                    # image_colormap="turbo",
-                )
-                """
-
-                lid = x[:, 3:, :, :].detach()
-                lid -= lid.min()
-                lid /= lid.max()
-                experiment.log_image(
-                    name="valid input lidar",
-                    image_data=make_grid(lid[:5, :, :, :]),
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                )
-                rgb = x[:, :3, :, :].detach()
-                experiment.log_image(
-                    name="valid input rgb",
-                    image_data=make_grid(rgb[:5, :, :, :], nrow=5),
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                )
-            else:
-                rgb = x[:, :3, :, :].detach()
-                experiment.log_image(
-                    name="valid input rgb",
-                    image_data=make_grid(rgb[:5, :, :, :], nrow=5),
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                )
-
-                rgb = pred[:, :3, :, :].detach()
-                experiment.log_image(
-                    name="valid restoration rgb",
-                    image_data=make_grid(rgb[:5, :, :, :], nrow=5),
-                    image_channels="first",
-                    step=self.trainer.global_step,
-                )
+            rgb = pred[:, :3, :, :].detach()
+            experiment.add_image(
+                tag="valid restoration rgb",
+                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
