@@ -79,7 +79,7 @@ def train(opt):
     val_loader = DataLoader(
         val_dataset,
         batch_size=configs["train"]["batch-size"],
-        num_workers=3,
+        num_workers=max(1, int(opt.cpu_workers // 4)),
         pin_memory=True,
     )
 
