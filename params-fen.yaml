@@ -7,22 +7,21 @@ dataset:
         test-dataset: "data/nuscenes-complete-15x10/test"
 
 train:
-        learning-rate: 0.1
+        learning-rate: 0.01
         lr-decay: 0.1
         lr_decay_step_size: 1
-        batch-size: 2
+        batch-size: 4
         weight_decay: 0.0004
 
-        loss: "mse"
+        loss: "bce"
         loss-args: 
                 reduction: "mean"
 
         epochs: 30
-        validation-interval: 10
-        validation-batches: 1
+        validation-interval: 500
+        validation-batches: 100
 
-        logger-interval: 5
-
+        logger-interval: 100
         checkpoint-interval: 1
 
 model: !include nets/feature_net.yaml
