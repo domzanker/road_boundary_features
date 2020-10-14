@@ -22,6 +22,7 @@ train:
         validation-batches: 100
 
         logger-interval: 100
+        nmbr-logged-images: 9
         checkpoint-interval: 1
 
 model: !include nets/feature_net.yaml
