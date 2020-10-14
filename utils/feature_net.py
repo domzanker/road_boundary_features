@@ -161,7 +161,7 @@ class FeatureNet(pl.LightningModule):
             dist = y[:, 0:1, :, :].detach().cpu()
             experiment.add_image(
                 "distance map",
-                image_data=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
+                img_tensor=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
@@ -222,7 +222,7 @@ class FeatureNet(pl.LightningModule):
             lid /= lid.max()
             experiment.add_image(
                 tag="valid input lidar",
-                img_tensor=make_grid(lid[:5, :, :, :]),
+                img_tensor=make_grid(apply_colormap(lid[:5, :, :, :])),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
