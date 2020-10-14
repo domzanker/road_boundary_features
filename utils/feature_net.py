@@ -166,6 +166,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
 
+            """
             end = y[:, 1:2, :, :].detach().cpu()
             experiment.add_image(
                 img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
@@ -183,6 +184,7 @@ class FeatureNet(pl.LightningModule):
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
+            """
 
             pred = pred.detach().cpu()
             if self.pretrain:
