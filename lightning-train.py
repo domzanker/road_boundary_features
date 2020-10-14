@@ -13,6 +13,7 @@ from pytorch_lightning.callbacks import (
     GPUStatsMonitor,
     LearningRateMonitor,
 )
+from pytorch_lightning.core.lightning import ModelSummary
 from utils.yaml import Loader
 import segmentation_models_pytorch as smp
 
@@ -146,6 +147,10 @@ def train(opt):
             profiler=opt.profile,
             # overfit_batches=100,
         )
+    inarray = (
+        model.example_input_array if "example_input_array" in model.__dict__ else None
+    )
+    comet_logger.log_graph(model, input_array=inarray)
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
