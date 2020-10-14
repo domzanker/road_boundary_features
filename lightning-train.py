@@ -112,7 +112,7 @@ def train(opt):
         trainer = pl.Trainer(
             gpus=opt.gpu,
             distributed_backend=dist_backend,
-            accumulate_grad_batches=4,
+            accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -129,7 +129,7 @@ def train(opt):
             gpus=opt.gpu,
             auto_select_gpus=True,
             distributed_backend=dist_backend,
-            accumulate_grad_batches=2,
+            accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
             val_check_interval=configs["train"]["validation-interval"],
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--gpu", type=int, default=0, nargs="+", help="gpu")
     parser.add_argument(
-        "--accumulate_grad_batches", type=int, default=3, help="accumulate_grad_batches"
+        "--accumulate_grad_batches", type=int, default=2, help="accumulate_grad_batches"
     )
     parser.add_argument(
         "--batch_size", type=int, default=0, help="batch_size. this overrides configs"
@@ -165,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
     parser.add_argument("--find_lr", action="store_true", default=False, help="")
+
     # FIXME resume training
 
     opt = parser.parse_args()
