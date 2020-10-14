@@ -152,13 +152,14 @@ class FeatureNet(pl.LightningModule):
     def validation_epoch_end(self, outputs):
 
         experiment = self.logger.experiment
-        y = torch.cat([t["y"] for t in outputs])
-        x = torch.cat([t["x"] for t in outputs])
-        pred = torch.cat([t["pred"] for t in outputs])
+
+        y = torch.cat([t["y"] for t in outputs]).detach().cpu()
+        x = torch.cat([t["x"] for t in outputs]).detach().cpu()
+        pred = torch.cat([t["pred"] for t in outputs]).detach().cpu()
 
         # log out out
         if not self.pretrain:
-            dist = y[:, 0:1, :, :].detach().cpu()
+            dist = y[:, 0:1, :, :]
             experiment.add_image(
                 "distance map",
                 img_tensor=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
@@ -186,7 +187,7 @@ class FeatureNet(pl.LightningModule):
             )
             """
 
-            pred = pred.detach().cpu()
+            pred = pred
             if self.pretrain:
                 pred = pred[:, :3, :, :]
             # log out out
@@ -219,7 +220,7 @@ class FeatureNet(pl.LightningModule):
             )
             """
 
-            lid = x[:, 3:, :, :].detach().cpu()
+            lid = x[:, 3:, :, :]
             lid -= lid.min()
             lid /= lid.max()
             experiment.add_image(
@@ -228,7 +229,7 @@ class FeatureNet(pl.LightningModule):
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
-            rgb = x[:, :3, :, :].detach().cpu()
+            rgb = x[:, :3, :, :]
             experiment.add_image(
                 tag="valid input rgb",
                 img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
@@ -236,7 +237,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
         else:
-            rgb = x[:, :3, :, :].detach()
+            rgb = x[:, :3, :, :]
             experiment.add_image(
                 tag="valid input rgb",
                 img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
@@ -244,7 +245,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
 
-            rgb = pred[:, :3, :, :].detach()
+            rgb = pred[:, :3, :, :]
             experiment.add_image(
                 tag="valid restoration rgb",
                 img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
