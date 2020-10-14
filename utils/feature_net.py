@@ -160,7 +160,7 @@ class FeatureNet(pl.LightningModule):
         pred = torch.cat([t["pred"] for t in outputs]).detach().cpu()
 
         nmbr_images = self.train_configs["nmbr-logged-images"]
-        nrows = int(nmbr_images // 12)
+        nrows = int(nmbr_images // 12) + 1
 
         # log out out
         if not self.pretrain:
