@@ -158,7 +158,7 @@ class FeatureNet(pl.LightningModule):
 
         # log out out
         if not self.pretrain:
-            dist = y[:, 0:1, :, :].detach()
+            dist = y[:, 0:1, :, :].detach().cpu()
             experiment.add_image(
                 "distance map",
                 image_data=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
@@ -166,7 +166,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
 
-            end = y[:, 1:2, :, :].detach()
+            end = y[:, 1:2, :, :].detach().cpu()
             experiment.add_image(
                 img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
                 tag="end map",
@@ -174,7 +174,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
 
-            direc = y[:, 2:4, :, :].detach()
+            direc = y[:, 2:4, :, :].detach().cpu()
             experiment.add_image(
                 img_tensor=make_grid(
                     angle_map(apply_colormap(direc[:25, :, :, :])), nrow=5
@@ -184,7 +184,7 @@ class FeatureNet(pl.LightningModule):
                 global_step=self.trainer.global_step,
             )
 
-            pred = pred.detach()
+            pred = pred.detach().cpu()
             if self.pretrain:
                 pred = pred[:, :3, :, :]
             # log out out
@@ -217,7 +217,7 @@ class FeatureNet(pl.LightningModule):
             )
             """
 
-            lid = x[:, 3:, :, :].detach()
+            lid = x[:, 3:, :, :].detach().cpu()
             lid -= lid.min()
             lid /= lid.max()
             experiment.add_image(
@@ -226,7 +226,7 @@ class FeatureNet(pl.LightningModule):
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
-            rgb = x[:, :3, :, :].detach()
+            rgb = x[:, :3, :, :].detach().cpu()
             experiment.add_image(
                 tag="valid input rgb",
                 img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
