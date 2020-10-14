@@ -7,7 +7,7 @@ dataset:
         test-dataset: "data/nuscenes-complete-15x10/test"
 
 train:
-        learning-rate: 0.01
+        learning-rate: 0.03
         lr-decay: 0.1
         lr_decay_step_size: 1
         batch-size: 4
