@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import segmentation_models_pytorch as smp
 
 import torch
+from math import sqrt
 from torch.nn import Module, Sequential
 from torch.nn.common_types import _size_2_t
 from torchvision.utils import make_grid
@@ -157,12 +158,17 @@ class FeatureNet(pl.LightningModule):
         x = torch.cat([t["x"] for t in outputs]).detach().cpu()
         pred = torch.cat([t["pred"] for t in outputs]).detach().cpu()
 
+        nmbr_images = self.train_configs["nmbr-logged-images"]
+        nrows = int(sqrt(nmbr_images) // 1)
+
         # log out out
         if not self.pretrain:
             dist = y[:, 0:1, :, :]
             experiment.add_image(
                 "distance map",
-                img_tensor=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
+                img_tensor=make_grid(
+                    apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows
+                ),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
@@ -194,7 +200,9 @@ class FeatureNet(pl.LightningModule):
             dist = pred[:, 0:1, :, :].detach()
             # TODO Turbo colormap
             experiment.add_image(
-                img_tensor=make_grid(apply_colormap(dist[:25, :, :, :]), nrow=5),
+                img_tensor=make_grid(
+                    apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows
+                ),
                 tag="distance pred",
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
@@ -225,14 +233,16 @@ class FeatureNet(pl.LightningModule):
             lid /= lid.max()
             experiment.add_image(
                 tag="valid input lidar",
-                img_tensor=make_grid(apply_colormap(lid[:5, :, :, :])),
+                img_tensor=make_grid(
+                    apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows
+                ),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
             rgb = x[:, :3, :, :]
             experiment.add_image(
                 tag="valid input rgb",
-                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                img_tensor=make_grid(rgb[:nmbr_images, :, :, :], nrow=nrows),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
@@ -240,7 +250,7 @@ class FeatureNet(pl.LightningModule):
             rgb = x[:, :3, :, :]
             experiment.add_image(
                 tag="valid input rgb",
-                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                img_tensor=make_grid(rgb[:nmbr_images, :, :, :], nrow=nrows),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
@@ -248,7 +258,7 @@ class FeatureNet(pl.LightningModule):
             rgb = pred[:, :3, :, :]
             experiment.add_image(
                 tag="valid restoration rgb",
-                img_tensor=make_grid(rgb[:5, :, :, :], nrow=5),
+                img_tensor=make_grid(rgb[:nmbr_images, :, :, :], nrow=nrows),
                 dataformats="CHW",
                 global_step=self.trainer.global_step,
             )
