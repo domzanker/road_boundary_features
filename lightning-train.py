@@ -147,10 +147,7 @@ def train(opt):
             profiler=opt.profile,
             # overfit_batches=100,
         )
-    inarray = (
-        model.example_input_array if "example_input_array" in model.__dict__ else None
-    )
-    comet_logger.log_graph(model, input_array=inarray)
+    comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
