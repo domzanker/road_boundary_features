@@ -1,0 +1,3 @@
+outs:
+- md5: 6cd548fc75788232a467e5b4a9db120b.dir
+  path: nuscenes-complete-15x10
