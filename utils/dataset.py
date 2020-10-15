@@ -1,17 +1,15 @@
-import h5py
 from pathlib import Path
-from typing import Optional, Tuple
-import numpy as np
-import cv2
-
-import torch
-from torch.utils.data import Dataset
-import torch.nn.functional as F
-from torchvision.transforms.functional import to_tensor
-import torchvision.transforms as vision_transforms
-
-
 from time import sleep
+from typing import Optional, Tuple
+
+import cv2
+import h5py
+import numpy as np
+import torch
+import torch.nn.functional as F
+import torchvision.transforms as vision_transforms
+from torch.utils.data import Dataset
+from torchvision.transforms.functional import to_tensor
 
 
 class RoadBoundaryDataset(Dataset):
@@ -98,7 +96,7 @@ class RoadBoundaryDataset(Dataset):
         if self.transform is not None:
             mean = self.transform_params["mean"]
             std = self.transform_params["std"]
-            image_torch[:3, :, :] = vision_transforms.functional.normalize(
+            image_torch[:3, :, :] = F.normalize(
                 image_torch[:3, :, :], mean=mean, std=std
             )
 
