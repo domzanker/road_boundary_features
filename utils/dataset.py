@@ -1,6 +1,6 @@
-import pickle
+import h5py
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Optional, Tuple
 import numpy as np
 import cv2
 
@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from torchvision.transforms.functional import to_tensor
 import torchvision.transforms as vision_transforms
 
-from functools import partial
 
 from time import sleep
 
@@ -21,8 +20,8 @@ class RoadBoundaryDataset(Dataset):
         path: Path,
         transform=None,
         *,
-        suffix=".pkl",
-        image_size: Tuple[int, int] = (640, 360)
+        suffix: str = ".h5",
+        image_size: Optional[Tuple[int, int]] = None
     ):
         path = Path(path)
 
@@ -36,7 +35,6 @@ class RoadBoundaryDataset(Dataset):
 
         if transform is not None:
             self.transform_params = transform
-            self.transform = partial(self._preproc, **transform)
         else:
             self.transform = None
 
@@ -46,34 +44,6 @@ class RoadBoundaryDataset(Dataset):
     def __len__(self):
         return len(self.index)
 
-    def _preproc(
-        self, x, mean=None, std=None, input_space="RGB", input_range=None, **kwargs
-    ):
-
-        if input_space == "BGR":
-            x = x[..., ::-1].copy()
-
-        if input_range is not None:
-            if x.max() > 1 and input_range[1] == 1:
-                x = x / x.max()
-
-        if mean is None:
-            mean = 0
-        if std is None:
-            std = 0
-
-        x = vision_transforms.functional.normalize(x, mean, std)
-
-        return x
-
-    def _to_tensor(self, arr):
-        tensor = torch.Tensor(arr)
-        if tensor.ndimension() == 2:
-            tensor = tensor.unsqueeze(0)
-        else:
-            tensor = tensor.permute(2, 0, 1)
-        return tensor
-
     def __getitem__(self, indx: int):
 
         sample_file = self.index[indx]
@@ -81,63 +51,46 @@ class RoadBoundaryDataset(Dataset):
         if not sample_file.is_file():
             sleep(0.01)
 
-        with sample_file.open("rb") as f:
-            complete_sample = pickle.load(f)
-        """
-        sample_collection = {
-            "bev": bev,
-            "rgb": self.rgb,
-            "lidar_height": self.lidar[:, :, 2],
-            "lidar_intensity": self.lidar[:, :, 1],
-            "ground_truth": self.ground_truth,
-            "road_direction_map": self.direction_map,
-            "inverse_distance_map": self.distance_map,
-        }
-        """
-        assert complete_sample["road_direction_map"].shape[-1] == 2
-        assert complete_sample["inverse_distance_map"].shape[-1] == 1
-        assert complete_sample["end_points_map"].shape[-1] == 1
+        with h5py.File(sample_file, mode="r", swmr=True) as f:
+            assert f["road_direction_map"].shape[-1] == 2
+            assert f["inverse_distance_map"].shape[-1] == 1
+            assert f["end_points_map"].shape[-1] == 1
 
-        # HWC -> CHW
-        rgb = complete_sample["rgb"].astype(np.uint8)
-        rgb = to_tensor(rgb)  # range [0,1]
+            rgb = f["rgb"][()].float() / 255  # uint8 -> float32
+            height = f["lidar_height"][()].float()  # float16 -> float32
 
-        height = self._to_tensor(complete_sample["lidar_height"].astype(np.float32))
-        height = height - height.min()  # range [0, 1]
-        height = height / (height.max() + 1e-12)
+            # float16->float32
+            inverse_distance_map = f["inverse_distance_map"][()].float()
+            end_points_map = f["end_points_map"][()].float()  # float16 -> float32
+            road_direction_map = f["road_direction_map"][()].float()  # float32
 
-        end_points = self._to_tensor(
-            complete_sample["end_points_map"].astype(np.float32)
-        )
+        assert torch.isfinite(road_direction_map).all()
+        assert torch.isfinite(inverse_distance_map).all()
+        assert torch.isfinite(end_points_map).all()
 
-        direction_map = self._to_tensor(
-            complete_sample["road_direction_map"].astype(np.float32)
-        )
-        distance_map = self._to_tensor(
-            complete_sample["inverse_distance_map"].astype(np.float32)
-        )
-        distance_map = distance_map - distance_map.min()
-        distance_map = distance_map / (distance_map.max() + 1e-12)  # range [0, 1]
-        assert torch.isfinite(distance_map).all()
         assert torch.isfinite(rgb).all()
+        assert torch.isfinite(height).all()
 
-        assert end_points.shape[0] == 1
-        assert direction_map.shape[0] == 2
-        assert distance_map.shape[0] == 1
+        rgb = rgb.permute(2, 0, 1)
+        height = height.permute(2, 0, 1)
+
+        inverse_distance_map = inverse_distance_map.permute(2, 0, 1)
+        end_points_map = end_points_map.permute(2, 0, 1)
+        road_direction_map = road_direction_map.permute(2, 0, 1)
+
+        assert end_points_map.shape[0] == 1
+        assert road_direction_map.shape[0] == 2
+        assert inverse_distance_map.shape[0] == 1
 
         # convert to torch tensors with CHW
         # targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
-        targets_torch = distance_map
+        targets_torch = inverse_distance_map
+        image_torch = torch.cat([rgb, height])
         if self.image_size is not None:
             targets_torch = F.interpolate(
                 targets_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
-        if self.transform:
-            rgb = self.transform(rgb)
-
-        image_torch = torch.cat([rgb, height])
-        if self.image_size is not None:
             image_torch = F.interpolate(
                 image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
@@ -148,7 +101,5 @@ class RoadBoundaryDataset(Dataset):
             image_torch[:3, :, :] = vision_transforms.functional.normalize(
                 image_torch[:3, :, :], mean=mean, std=std
             )
-
-        # assert targets_torch.shape[0] == 4
 
         return (image_torch, targets_torch)
