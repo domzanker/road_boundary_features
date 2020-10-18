@@ -1,11 +1,11 @@
 import pytorch_lightning as pl
 from utils.feature_net import FeatureNet, Encoder, Decoder
 from typing import List, Union
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch
 from torch.nn import Module, ModuleList, Identity, ConvTranspose2d, Sequential
-from torch.common_types import _size_2_t
 from torchvision.utils import make_grid
-from utils.modules import activation_func
+from utils.modules import activation_func, Conv2dAuto
 from utils.losses import loss_func
 from utils.image_transforms import apply_colormap
 
@@ -16,25 +16,49 @@ class AutoEncoder(FeatureNet):
 
         self.encoder_prec = Identity()
         self.decoder = AEDecoder(self.encoder)
-        self.head = Identity()
+        self.encoder_prec = Conv2dAuto(
+            in_channels=4,
+            out_channels=self.model_configs["encoder"]["in_channels"][0],
+            kernel_size=1,
+        )
 
-    def training_step(self, batch):
-        x, y = batch
+        self.head = ConvTranspose2d(
+            in_channels=64,
+            out_channels=4,
+            kernel_size=1,
+            padding=self.encoder_prec.padding,
+        )
 
-        encoding = self.encoder(x)
-        pred = self.decoder(*encoding)
+    def training_step(self, batch, batch_idx):
+        with self.logger[1].experiment.train():
+            x, y = batch
 
-        loss = self.loss(pred, x)
+            prec = self.encoder_prec(x)
+            encoding = self.encoder(prec)
+            pred = self.decoder(*encoding)
+            pred = self.head(pred)
 
-        return loss
+            loss = self.loss(pred, x)
+            self.log("train_loss", loss)
 
-    def validation_step(self, batch):
-        x, y = batch
+            return loss
 
-        encoding = self.encoder(x)
-        pred = self.decoder(*encoding)
+    def validation_step(self, batch, batch_idx):
+        with self.logger[1].experiment.validate():
+            x, y = batch
 
-        loss = self.loss(pred, x)
+            prec = self.encoder_prec(x)
+            encoding = self.encoder(prec)
+            pred = self.decoder(*encoding)
+            pred = self.head(pred)
+
+            loss = self.loss(pred, x)
+            self.log(
+                "val_loss",
+                loss,
+                on_step=False,
+                on_epoch=True,
+            )
 
         return {"loss": loss.detach(), "prediction": pred.detach(), "input": x.detach()}
 
@@ -42,75 +66,78 @@ class AutoEncoder(FeatureNet):
 
         tensorboard = self.logger[0].experiment
         comet = self.logger[1].experiment
+        with comet.validate():
 
-        prediction = torch.cat([t["prediction"] for t in outputs]).cpu()
-        x = torch.cat([t["input"] for t in outputs]).cpu()
+            prediction = torch.cat([t["prediction"] for t in outputs]).cpu()
+            x = torch.cat([t["input"] for t in outputs]).cpu()
 
-        nmbr_images = self.train_configs["nmbr-logged-images"]
-        nrows = 12
+            nmbr_images = self.train_configs["nmbr-logged-images"]
+            nrows = 12
 
-        # log out out
-        input_rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
+            # log out out
+            input_rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
 
-        tensorboard.add_image(
-            tag="input rgb",
-            img_tensor=input_rgb,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            input_rgb,
-            name="input rgb",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+            tensorboard.add_image(
+                tag="input rgb",
+                img_tensor=input_rgb,
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            comet.log_image(
+                input_rgb,
+                name="input rgb",
+                image_channels="first",
+                step=self.trainer.global_step,
+            )
 
-        input_lidar = make_grid(apply_colormap(x[:nmbr_images, 3:, :, :]), nrow=nrows)
+            input_lidar = make_grid(
+                apply_colormap(x[:nmbr_images, 3:, :, :]), nrow=nrows
+            )
 
-        tensorboard.add_image(
-            tag="input lidar",
-            img_tensor=input_lidar,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            input_lidar,
-            name="input lidar",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+            tensorboard.add_image(
+                tag="input lidar",
+                img_tensor=input_lidar,
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            comet.log_image(
+                input_lidar,
+                name="input lidar",
+                image_channels="first",
+                step=self.trainer.global_step,
+            )
 
-        pred_rgb = make_grid(prediction[:nmbr_images, :3, :, :], nrow=nrows)
+            pred_rgb = make_grid(prediction[:nmbr_images, :3, :, :], nrow=nrows)
 
-        tensorboard.add_image(
-            tag="input rgb",
-            img_tensor=pred_rgb,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            pred_rgb,
-            name="input rgb",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+            tensorboard.add_image(
+                tag="prediction rgb",
+                img_tensor=pred_rgb,
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            comet.log_image(
+                pred_rgb,
+                name="prediction rgb",
+                image_channels="first",
+                step=self.trainer.global_step,
+            )
 
-        pred_lidar = make_grid(
-            apply_colormap(prediction[:nmbr_images, 3:, :, :]), nrow=nrows
-        )
+            pred_lidar = make_grid(
+                apply_colormap(prediction[:nmbr_images, 3:, :, :]), nrow=nrows
+            )
 
-        tensorboard.add_image(
-            tag="input lidar",
-            img_tensor=pred_lidar,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            pred_lidar,
-            name="input lidar",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+            tensorboard.add_image(
+                tag="pred_lidar lidar",
+                img_tensor=pred_lidar,
+                dataformats="CHW",
+                global_step=self.trainer.global_step,
+            )
+            comet.log_image(
+                pred_lidar,
+                name="prediction lidar",
+                image_channels="first",
+                step=self.trainer.global_step,
+            )
 
 
 class AEDecoder(Module):
@@ -119,10 +146,10 @@ class AEDecoder(Module):
 
         decoder_blocks = []
         for block in encoder.blocks[::-1]:
-            out_padding = 2  # TODO
+            out_padding = 1  # TODO
             conv = ConvTranspose2d(
-                in_channels=block.in_channels,
-                out_channels=block.out_channels,
+                in_channels=block.out_channels,
+                out_channels=block.in_channels,
                 kernel_size=3,
                 stride=2,
                 dilation=block.head_block.blocks[0].dilation,

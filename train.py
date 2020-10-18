@@ -7,6 +7,7 @@ from pathlib import Path
 from torch.utils.data.dataloader import DataLoader
 from utils.dataset import RoadBoundaryDataset
 from utils.feature_net import FeatureNet
+from utils.autoencoder import AutoEncoder
 from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from pytorch_lightning.callbacks import (
     ModelCheckpoint,
@@ -87,16 +88,24 @@ def train(opt):
     checkpoint_callback = ModelCheckpoint(
         filepath="data/checkpoints/" + opt.tag + "/{epoch}", period=1, verbose=True
     )
-    gpustats = GPUStatsMonitor(temperature=True)
+    # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
     if opt.load_model or opt.resume_training:
+
         if opt.checkpoint is not None:
             checkpoint_file = opt.checkpoint
         else:
             raise NotImplementedError
-        model = FeatureNet.load_from_checkpoint(checkpoint_file)
+
+        if opt.autoencoder:
+            model = AutoEncoder.load_from_checkpoint(checkpoint_file)
+        else:
+            model = FeatureNet.load_from_checkpoint(checkpoint_file)
     else:
-        model = FeatureNet(configs=configs, pretrain=opt.autoencoder)
+        if opt.autoencoder:
+            model = AutoEncoder(configs=configs)
+        else:
+            model = FeatureNet(configs=configs)
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
     comet_logger = CometLogger(
@@ -127,14 +136,15 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
-            callbacks=[gpustats, lr_monitor],
+            # callbacks=[gpustats, lr_monitor],
+            callbacks=[lr_monitor],
             profiler=opt.profile,
         )
     else:
         trainer = pl.Trainer(
-            gpus=opt.gpu,
-            auto_select_gpus=True,
-            distributed_backend=dist_backend,
+            # gpus=opt.gpu,
+            # auto_select_gpus=True,
+            # distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
@@ -143,10 +153,12 @@ def train(opt):
             log_every_n_steps=configs["train"]["logger-interval"],
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
-            callbacks=[gpustats, lr_monitor],
+            # callbacks=[gpustats, lr_monitor],
+            callbacks=[lr_monitor],
             profiler=opt.profile,
             # overfit_batches=100,
         )
+
     comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
