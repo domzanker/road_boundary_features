@@ -54,13 +54,21 @@ class RoadBoundaryDataset(Dataset):
             assert f["inverse_distance_map"].shape[-1] == 1
             assert f["end_points_map"].shape[-1] == 1
 
-            rgb = f["rgb"][()].float() / 255  # uint8 -> float32
-            height = f["lidar_height"][()].float()  # float16 -> float32
+            rgb = torch.from_numpy(f["rgb"][()]).float() / 255  # uint8 -> float32
+            height = torch.from_numpy(
+                f["lidar_height"][()]
+            ).float()  # float16 -> float32
 
             # float16->float32
-            inverse_distance_map = f["inverse_distance_map"][()].float()
-            end_points_map = f["end_points_map"][()].float()  # float16 -> float32
-            road_direction_map = f["road_direction_map"][()].float()  # float32
+            inverse_distance_map = torch.from_numpy(
+                f["inverse_distance_map"][()]
+            ).float()
+            end_points_map = torch.from_numpy(
+                f["end_points_map"][()]
+            ).float()  # float16 -> float32
+            road_direction_map = torch.from_numpy(
+                f["road_direction_map"][()]
+            ).float()  # float32
 
         assert torch.isfinite(road_direction_map).all()
         assert torch.isfinite(inverse_distance_map).all()
@@ -70,7 +78,7 @@ class RoadBoundaryDataset(Dataset):
         assert torch.isfinite(height).all()
 
         rgb = rgb.permute(2, 0, 1)
-        height = height.permute(2, 0, 1)
+        height = height[None, :, :]
 
         inverse_distance_map = inverse_distance_map.permute(2, 0, 1)
         end_points_map = end_points_map.permute(2, 0, 1)
