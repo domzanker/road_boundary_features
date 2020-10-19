@@ -34,7 +34,7 @@ class RoadBoundaryDataset(Dataset):
         if transform is not None:
             self.transform_params = transform
         else:
-            self.transform = None
+            self.transform_params = None
 
         self.image_size = image_size
         super().__init__()
@@ -101,7 +101,7 @@ class RoadBoundaryDataset(Dataset):
                 image_torch[None, :, :, :], size=self.image_size
             ).squeeze(dim=0)
 
-        if self.transform is not None:
+        if self.transform_params is not None:
             mean = self.transform_params["mean"]
             std = self.transform_params["std"]
             image_torch[:3, :, :] = F.normalize(
