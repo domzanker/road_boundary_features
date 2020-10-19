@@ -17,10 +17,8 @@ from utils.image_transforms import angle_map, apply_colormap
 
 
 class FeatureNet(pl.LightningModule):
-    def __init__(self, configs: Dict[str, Any], *, pretrain: bool = False):
+    def __init__(self, configs: Dict[str, Any]):
         super(FeatureNet, self).__init__()
-
-        self.pretrain = pretrain
 
         self.model_configs = configs["model"]
         self.train_configs = configs["train"]
@@ -37,12 +35,8 @@ class FeatureNet(pl.LightningModule):
                 torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
             )
             self.encoder = Encoder(**self.model_configs["encoder"])
-            if pretrain:
-                self.decoder = AEDecoder(**self.model_configs["decoder"])
-                self.head = AEHead()
-            else:
-                self.decoder = Decoder(**self.model_configs["decoder"])
-                self.head = SegmentationHead(**self.model_configs["head"])
+            self.decoder = Decoder(**self.model_configs["decoder"])
+            self.head = SegmentationHead(**self.model_configs["head"])
 
         else:
 
@@ -60,9 +54,6 @@ class FeatureNet(pl.LightningModule):
                 self.model_configs["model"]["encoder_weights"],
             )
 
-            if pretrain:
-                raise NotImplementedError
-
         loss_args = (
             self.train_configs["loss-args"]
             if "loss-args" in self.train_configs.keys()
@@ -78,8 +69,8 @@ class FeatureNet(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        if "size" in self.model_configs.keys():
-            s = self.model_configs["size"]
+        if "input_size" in self.model_configs.keys():
+            s = self.model_configs["input_size"]
             self.example_input_array = torch.ones([1, 4, s[0], s[1]])
 
     def forward(self, x):
@@ -120,9 +111,6 @@ class FeatureNet(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         target = y[:, 0:1, :, :]
-        if self.pretrain:
-            y = x
-            target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
@@ -163,134 +151,111 @@ class FeatureNet(pl.LightningModule):
         nrows = 12
 
         # log out out
-        if not self.pretrain:
-            dist = y[:, 0:1, :, :]
-            dist_dbg = make_grid(
-                apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows
-            )
+        dist = y[:, 0:1, :, :]
+        dist_dbg = make_grid(apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows)
 
-            tensorboard.add_image(
-                tag="distance map",
-                img_tensor=dist_dbg,
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            comet.log_image(
-                dist_dbg,
-                name="distance map",
-                image_channels="first",
-                step=self.trainer.global_step,
-            )
+        tensorboard.add_image(
+            tag="distance map",
+            img_tensor=dist_dbg,
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        comet.log_image(
+            dist_dbg,
+            name="distance map",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
-            """
-            end = y[:, 1:2, :, :].detach().cpu()
-            experiment.add_image(
-                img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
-                tag="end map",
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
+        """
+        end = y[:, 1:2, :, :].detach().cpu()
+        experiment.add_image(
+            img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
+            tag="end map",
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
 
-            direc = y[:, 2:4, :, :].detach().cpu()
-            experiment.add_image(
-                img_tensor=make_grid(
-                    angle_map(apply_colormap(direc[:25, :, :, :])), nrow=5
-                ),
-                tag="direction map",
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            """
+        direc = y[:, 2:4, :, :].detach().cpu()
+        experiment.add_image(
+            img_tensor=make_grid(
+                angle_map(apply_colormap(direc[:25, :, :, :])), nrow=5
+            ),
+            tag="direction map",
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        """
 
-            pred = pred
-            if self.pretrain:
-                pred = pred[:, :3, :, :]
-            # log out out
-            dist = pred[:, 0:1, :, :].detach()
+        pred = pred
+        # log out out
+        dist = pred[:, 0:1, :, :].detach()
 
-            dist_pred = make_grid(
-                apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows
-            )
+        dist_pred = make_grid(apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows)
 
-            tensorboard.add_image(
-                img_tensor=dist_pred,
-                tag="distance pred",
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            comet.log_image(
-                dist_pred,
-                name="distance pred",
-                image_channels="first",
-                step=self.trainer.global_step,
-            )
+        tensorboard.add_image(
+            img_tensor=dist_pred,
+            tag="distance pred",
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        comet.log_image(
+            dist_pred,
+            name="distance pred",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
-            """
-            end = pred[:, 1:2, :, :].detach()
-            experiment.add_image(
-                img_tensor=make_grid(apply_colormap(end[:5, :, :, :]), nrow=5),
-                tag="end pred",
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
+        """
+        end = pred[:, 1:2, :, :].detach()
+        experiment.add_image(
+            img_tensor=make_grid(apply_colormap(end[:5, :, :, :]), nrow=5),
+            tag="end pred",
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
 
-            direc = pred[:, 2:4, :, :].detach()
-            experiment.add_image(
-                img_tensor=make_grid(
-                    angle_map(direc[:5, :, :, :]),nrow=5
-                ),
-                tag="direction pred",
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            """
+        direc = pred[:, 2:4, :, :].detach()
+        experiment.add_image(
+            img_tensor=make_grid(
+                angle_map(direc[:5, :, :, :]),nrow=5
+            ),
+            tag="direction pred",
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        """
 
-            lid = x[:, 3:, :, :]
-            lid -= lid.min()
-            lid /= lid.max()
-            lid = make_grid(apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows)
-            tensorboard.add_image(
-                tag="valid input lidar",
-                img_tensor=lid,
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            comet.log_image(
-                lid,
-                name="valid input lidar",
-                image_channels="first",
-                step=self.trainer.global_step,
-            )
+        lid = x[:, 3:, :, :]
+        lid -= lid.min()
+        lid /= lid.max()
+        lid = make_grid(apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows)
+        tensorboard.add_image(
+            tag="valid input lidar",
+            img_tensor=lid,
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        comet.log_image(
+            lid,
+            name="valid input lidar",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
-            rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
-            tensorboard.add_image(
-                tag="valid input rgb",
-                img_tensor=rgb,
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-            comet.log_image(
-                rgb,
-                name="valid input rgb",
-                image_channels="first",
-                step=self.trainer.global_step,
-            )
-        else:
-            rgb = x[:, :3, :, :]
-            tensorboard.add_image(
-                tag="valid input rgb",
-                img_tensor=make_grid(rgb[:nmbr_images, :, :, :], nrow=nrows),
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
-
-            rgb = pred[:, :3, :, :]
-            tensorboard.add_image(
-                tag="valid restoration rgb",
-                img_tensor=make_grid(rgb[:nmbr_images, :, :, :], nrow=nrows),
-                dataformats="CHW",
-                global_step=self.trainer.global_step,
-            )
+        rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
+        tensorboard.add_image(
+            tag="valid input rgb",
+            img_tensor=rgb,
+            dataformats="CHW",
+            global_step=self.trainer.global_step,
+        )
+        comet.log_image(
+            rgb,
+            name="valid input rgb",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -460,6 +425,9 @@ class EncoderBlock(Module):
             kernel_size = [kernel_size for i in range(1, nmbr_res_blocks)]
         if not isinstance(dilation, list):
             dilation = [dilation for i in range(1, nmbr_res_blocks)]
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         self.head_block = ResidualBlock(
             in_channels=in_channels,
