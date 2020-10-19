@@ -25,15 +25,20 @@ def convert_directory(path="data/nuscenes-complete-15x10"):
                         continue
                     elif key == "rgb":
                         value = torch.from_numpy(value.astype(np.uint8))
+                        assert torch.isfinite(value).all()
                     elif key == "road_direction_map":
                         value = value / (
                             np.abs(np.linalg.norm(value, axis=2, keepdims=True)) + 1e-12
                         )
                         value = torch.from_numpy(value.astype(np.float32))
+                        assert torch.isfinite(value).all()
                     else:
                         value = value - value.min()
                         value = value / (value.max() + 1e-12)
-                        value = torch.from_numpy(value.astype(np.float16))
+                        value = torch.from_numpy(
+                            np.nan_to_num(value.astype(np.float16))
+                        )
+                        assert torch.isfinite(value).all()
 
                     h.create_dataset(key, data=value)
 
@@ -46,6 +51,7 @@ def read_dir_h5(path):
             h = h5py.File(file, mode="r", swmr=True)
             d = h["rgb"][()]  # noqa
             i = i + 1
+            print(d.__repr__)
     print("Loaded %s files" % i)
 
 
@@ -89,4 +95,5 @@ if __name__ == "__main__":
     p = argv[1]
     t = time.time()
     convert_directory(p)
+    # read_dir_h5(p)
     print("finished after {}s".format(time.time() - t))
