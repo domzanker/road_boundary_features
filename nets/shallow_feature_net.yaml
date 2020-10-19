@@ -16,7 +16,7 @@ encoder:
         dilation: 2
 
 decoder:
-        decoder_depth: 4
+        decoder_depth: 2
         conv_per_block: 4
         blocks:
                 [
