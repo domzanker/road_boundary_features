@@ -56,18 +56,18 @@ class RoadBoundaryDataset(Dataset):
 
             rgb = torch.from_numpy(f["rgb"][()]).float() / 255  # uint8 -> float32
             height = torch.from_numpy(
-                f["lidar_height"][()]
+                np.nan_to_num(f["lidar_height"][()])
             ).float()  # float16 -> float32
 
             # float16->float32
             inverse_distance_map = torch.from_numpy(
-                f["inverse_distance_map"][()]
+                np.nan_to_num(f["inverse_distance_map"][()])
             ).float()
             end_points_map = torch.from_numpy(
-                f["end_points_map"][()]
+                np.nan_to_num(f["end_points_map"][()])
             ).float()  # float16 -> float32
             road_direction_map = torch.from_numpy(
-                f["road_direction_map"][()]
+                np.nan_to_num(f["road_direction_map"][()])
             ).float()  # float32
 
         assert torch.isfinite(road_direction_map).all()
@@ -102,10 +102,10 @@ class RoadBoundaryDataset(Dataset):
             ).squeeze(dim=0)
 
         if self.transform_params is not None:
-            mean = self.transform_params["mean"]
-            std = self.transform_params["std"]
-            image_torch[:3, :, :] = vision_transforms.functional.normalize(
-                image_torch[:3, :, :], mean=mean, std=std
+            # mean = self.transform_params["mean"]
+            # std = self.transform_params["std"]
+            image_torch[:3, :, :] = F.normalize(
+                image_torch[:3, :, :], mean=[0.0, 0.0, 0.0], std=[1, 1, 1]
             )
 
         return (image_torch, targets_torch)
@@ -142,3 +142,7 @@ class ImageDataset(RoadBoundaryDataset):
         image_tensor = to_tensor(image)
 
         return image_tensor, image_tensor
+
+
+if __name__ == "__main__":
+    pass
