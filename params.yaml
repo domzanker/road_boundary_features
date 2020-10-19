@@ -1,4 +1,5 @@
 dataset:
+        name: "road_boundary_dataset"
         #size: [640, 360]
         #size: [1280, 720]
         size: null

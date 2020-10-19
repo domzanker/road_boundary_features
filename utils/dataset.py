@@ -109,3 +109,36 @@ class RoadBoundaryDataset(Dataset):
             )
 
         return (image_torch, targets_torch)
+
+
+class ImageDataset(RoadBoundaryDataset):
+    def __init__(
+        self,
+        path: Path,
+        transform=None,
+        *,
+        suffix: str = ".jpeg",
+        image_size: Optional[Tuple[int, int]] = None
+    ):
+        super().__init__(
+            path, transform=transform, suffix=suffix, image_size=image_size
+        )
+        self.index = []
+        for scenes in path.iterdir():
+            if scenes.is_dir():
+                for samples in scenes.iterdir():
+                    if (samples / "CAM_FRONT.png").is_file():
+                        self.index.append(samples / "CAM_FRONT.png")
+
+    def __len__(self):
+        return len(self.index)
+
+    def __getitem__(self, indx: int):
+
+        sample_file = self.index[indx]
+
+        image = cv2.imread(sample_file)
+
+        image_tensor = to_tensor(image)
+
+        return image_tensor, image_tensor

@@ -5,9 +5,12 @@ import argparse
 import pytorch_lightning as pl
 from pathlib import Path
 from torch.utils.data.dataloader import DataLoader
-from utils.dataset import RoadBoundaryDataset
-from utils.feature_net import FeatureNet
-from utils.autoencoder import AutoEncoder
+
+from utils.dataset import RoadBoundaryDataset, ImageDataset
+from utils.yaml import Loader
+from modules.feature_net import FeatureNet
+from modules.autoencoder import AutoEncoder
+
 from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from pytorch_lightning.callbacks import (
     ModelCheckpoint,
@@ -15,7 +18,6 @@ from pytorch_lightning.callbacks import (
     LearningRateMonitor,
 )
 from pytorch_lightning.core.lightning import ModelSummary
-from utils.yaml import Loader
 import segmentation_models_pytorch as smp
 
 
@@ -32,6 +34,11 @@ def get_learning_rate_suggestion(model, data_loader):
 
     return suggestion, plot
 """
+
+data_dict = {
+    "road_boundary_dataset": RoadBoundaryDataset,
+    "image_dataset": ImageDataset,
+}
 
 
 def train(opt):
@@ -60,7 +67,9 @@ def train(opt):
     else:
         preprocessing_params = None
 
-    train_dataset = RoadBoundaryDataset(
+    dataset = data_dict[configs["dataset"]["name"]]
+
+    train_dataset = dataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
         transform=preprocessing_params,
@@ -73,7 +82,7 @@ def train(opt):
         pin_memory=True,
     )
 
-    val_dataset = RoadBoundaryDataset(
+    val_dataset = dataset(
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
         transform=preprocessing_params,
