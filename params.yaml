@@ -1,8 +1,8 @@
 dataset:
         name: "road_boundary_dataset"
-        #size: [640, 360]
+        size: [640, 360]
         #size: [1280, 720]
-        size: null
+        #size: null
         train-dataset: "data/nuscenes-complete-15x10/train"
         valid-dataset: "data/nuscenes-complete-15x10/valid"
         test-dataset: "data/nuscenes-complete-15x10/test"
@@ -14,11 +14,11 @@ train:
         batch-size: 4
         weight_decay: 1e-5
 
-        loss: "bce"
+        loss: "mse"
         loss-args: 
                 reduction: "mean"
 
-        epochs: 30
+        epochs: 50
         validation-interval: 500
         validation-batches: 100
 
@@ -26,6 +26,6 @@ train:
         nmbr-logged-images: 9
         checkpoint-interval: 1
 
-model: !include nets/feature_net.yaml
+model: !include nets/linknet.yaml
         
                 
