@@ -104,9 +104,11 @@ class RoadBoundaryDataset(Dataset):
         if self.transform_params is not None:
             # mean = self.transform_params["mean"]
             # std = self.transform_params["std"]
+            """
             image_torch[:3, :, :] = F.normalize(
                 image_torch[:3, :, :], mean=[0.0, 0.0, 0.0], std=[1, 1, 1]
             )
+            """
 
         return (image_torch, targets_torch)
 
