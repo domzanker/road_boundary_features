@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from utils.feature_net import FeatureNet, Encoder, Decoder
+from modules.feature_net import FeatureNet, Encoder, Decoder
 from typing import List, Union
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch
