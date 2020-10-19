@@ -85,9 +85,6 @@ class FeatureNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         target = y[:, 0:1, :, :]
-        if self.pretrain:
-            y = x
-            target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
