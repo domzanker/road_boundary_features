@@ -26,6 +26,6 @@ train:
         nmbr-logged-images: 9
         checkpoint-interval: 1
 
-model: !include nets/linknet.yaml
+model: !include nets/smp_linknet.yaml
         
                 
