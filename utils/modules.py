@@ -12,6 +12,7 @@ def activation_func(activation: str):
             "softmax": torch.nn.Softmax2d(),
             "lrelu": torch.nn.LeakyReLU(),
             "none": torch.nn.Identity(),
+            "tanh": torch.nn.Tanh(),
         }
     )[activation]
 

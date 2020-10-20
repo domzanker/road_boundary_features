@@ -9,7 +9,7 @@ from torchvision.utils import make_grid
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
-from utils.losses import loss_func
+from utils.losses import MultiFeaturesLoss
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
@@ -54,12 +54,14 @@ class FeatureNet(pl.LightningModule):
                 self.model_configs["model"]["encoder_weights"],
             )
 
+        """
         loss_args = (
             self.train_configs["loss-args"]
             if "loss-args" in self.train_configs.keys()
             else {}
         )
-        self.loss = loss_func(self.train_configs["loss"], **loss_args)
+        """
+        self.loss = MultiFeaturesLoss(**self.train_configs["losses"])
 
         self.train_mse = pl.metrics.MeanSquaredError()
         self.train_dist_accuracy = pl.metrics.Accuracy()
@@ -84,43 +86,49 @@ class FeatureNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        target = y[:, 0:1, :, :]
+        target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation, target)
-
-        """
-        tb = self.logger.experiment
-        tb.add_histogram(
-            "rgb channel", x.detach(), global_step=self.trainer.global_step
-        )
-        """
+        losses = self.loss(segmentation, target)
 
         # logging to tensorboard
-        self.log("train_loss", loss)
+        self.log("train_loss", losses["total_loss"])
+        loss_dict = {
+            "train_distance_loss": losses["distance_loss"].detach(),
+            "train_end_loss": losses["end_loss"].detach(),
+            "train_direction_loss": losses["direction_loss"].detach(),
+        }
+        self.log_dict(loss_dict)
 
-        return loss
+        return losses["total_loss"]
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        target = y[:, 0:1, :, :]
+        target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        loss = self.loss(segmentation, target)
+        losses = self.loss(segmentation, target)
+
+        loss_dict = {
+            "train_distance_loss": losses["distance_loss"].detach(),
+            "train_end_loss": losses["end_loss"].detach(),
+            "train_direction_loss": losses["direction_loss"].detach(),
+        }
+        self.log_dict(loss_dict)
 
         pred = segmentation[:, :1, :, :].detach()
         tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
-                "val_loss": loss,
+                "val_loss": losses["total_loss"],
                 "val_mse": self.val_mse(pred, tar),
                 "val_dist_accuracy": self.val_dist_accuracy(pred, tar),
             },
@@ -129,7 +137,7 @@ class FeatureNet(pl.LightningModule):
         )
 
         return {
-            "loss": loss.detach(),
+            "loss": losses["total_loss"].detach(),
             "y": y.detach(),
             "pred": segmentation.detach(),
             "x": x.detach(),
@@ -164,32 +172,42 @@ class FeatureNet(pl.LightningModule):
             step=self.trainer.global_step,
         )
 
-        """
-        end = y[:, 1:2, :, :].detach().cpu()
-        experiment.add_image(
-            img_tensor=make_grid(apply_colormap(end[:25, :, :, :]), nrow=5),
+        end = y[:, 1:2, :, :]
+        end_dgb = make_grid(apply_colormap(end[:nmbr_images, :, :, :]), nrow=nrows)
+
+        tensorboard.add_image(
             tag="end map",
+            img_tensor=end_dgb,
             dataformats="CHW",
             global_step=self.trainer.global_step,
+        )
+        comet.log_image(
+            end_dgb,
+            name="end map",
+            image_channels="first",
+            step=self.trainer.global_step,
         )
 
-        direc = y[:, 2:4, :, :].detach().cpu()
-        experiment.add_image(
-            img_tensor=make_grid(
-                angle_map(apply_colormap(direc[:25, :, :, :])), nrow=5
-            ),
+        direc = y[:, 2:4, :, :]
+        dir_dbg = make_grid(angle_map(direc[:nmbr_images, :, :, :]), nrow=nrows)
+
+        tensorboard.add_image(
             tag="direction map",
+            img_tensor=dir_dbg,
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
-        """
+        comet.log_image(
+            dir_dbg,
+            name="direction map",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
         pred = pred
         # log out out
         dist = pred[:, 0:1, :, :].detach()
-
         dist_pred = make_grid(apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows)
-
         tensorboard.add_image(
             img_tensor=dist_pred,
             tag="distance pred",
@@ -203,25 +221,35 @@ class FeatureNet(pl.LightningModule):
             step=self.trainer.global_step,
         )
 
-        """
         end = pred[:, 1:2, :, :].detach()
-        experiment.add_image(
-            img_tensor=make_grid(apply_colormap(end[:5, :, :, :]), nrow=5),
+        end_pred = make_grid(apply_colormap(end[:nmbr_images, :, :, :]), nrow=nrows)
+        tensorboard.add_image(
+            img_tensor=end_pred,
             tag="end pred",
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
+        comet.log_image(
+            end_pred,
+            name="end pred",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
         direc = pred[:, 2:4, :, :].detach()
-        experiment.add_image(
-            img_tensor=make_grid(
-                angle_map(direc[:5, :, :, :]),nrow=5
-            ),
+        dir_pred = make_grid(angle_map(direc[:nmbr_images, :, :, :]), nrow=nrows)
+        tensorboard.add_image(
+            img_tensor=dir_pred,
             tag="direction pred",
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
-        """
+        comet.log_image(
+            dir_pred,
+            name="direction pred",
+            image_channels="first",
+            step=self.trainer.global_step,
+        )
 
         lid = x[:, 3:, :, :]
         lid -= lid.min()

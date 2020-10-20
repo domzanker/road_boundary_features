@@ -50,6 +50,7 @@ class RoadBoundaryDataset(Dataset):
             sleep(0.01)
 
         with h5py.File(sample_file, mode="r", swmr=True) as f:
+
             assert f["road_direction_map"].shape[-1] == 2
             assert f["inverse_distance_map"].shape[-1] == 1
             assert f["end_points_map"].shape[-1] == 1
@@ -89,8 +90,16 @@ class RoadBoundaryDataset(Dataset):
         assert inverse_distance_map.shape[0] == 1
 
         # convert to torch tensors with CHW
-        # targets_torch = torch.cat([distance_map, end_points, direction_map], 0)
-        targets_torch = inverse_distance_map
+        targets_torch = torch.cat(
+            [
+                inverse_distance_map,
+                end_points_map,
+                road_direction_map,
+            ],
+            0,
+        )
+        assert targets_torch.shape[0] == 4
+        # targets_torch = inverse_distance_map
         image_torch = torch.cat([rgb, height])
         if self.image_size is not None:
             targets_torch = F.interpolate(

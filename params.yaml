@@ -14,9 +14,22 @@ train:
         batch-size: 4
         weight_decay: 1e-1
 
-        loss: "mse"
-        loss-args: 
-                reduction: "mean"
+        losses: 
+                distance_loss: 
+                        loss: "mse"
+                        factor: 1.0
+                        args:
+                                reduction: "mean"
+                end_loss: 
+                        loss: "mse"
+                        factor: 1.0
+                        args:
+                                reduction: "mean"
+                direction_loss: 
+                        loss: "cosine_similarity"
+                        factor: 1.0
+                        args:
+                                reduction: "mean"
 
         epochs: 50
         validation-interval: 500
@@ -26,6 +39,6 @@ train:
         nmbr-logged-images: 9
         checkpoint-interval: 1
 
-model: !include nets/smp_linknet.yaml
+model: !include nets/shallow_feature_net.yaml
         
                 

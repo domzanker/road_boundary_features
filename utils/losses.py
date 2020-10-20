@@ -1,6 +1,6 @@
 from torch.nn import ModuleDict, ModuleList, Module
-from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss
-from typing import Optional, Callable, Union, List
+from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss, CosineEmbeddingLoss
+from typing import Optional, Callable, Union, List, Dict
 
 
 def loss_func(loss: str, reduction: str = "mean", **kwargs):
@@ -10,16 +10,39 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
             "cross_entropy": CrossEntropyLoss(reduction=reduction, **kwargs),
             "bce": BCELoss(reduction=reduction, **kwargs),
             "nll": NLLLoss(reduction=reduction, **kwargs),
+            "cosine_similarity": CosineEmbeddingLoss(reduction=reduction, **kwargs),
         }
     )[loss]
 
 
-class MultiObjectiveLoss(Module):
-    def __init__(self, losses: List[str], factors: List[float]):
-        super(MultiObjectiveLoss, self).__init()
+class MultiFeaturesLoss(Module):
+    def __init__(self, distance_loss, end_loss, direction_loss):
+        super(MultiFeaturesLoss, self).__init__()
 
-        self.factors = factors
-        self.losses = ModuleList([loss_func(f) for f in losses])
+        self.factors = [
+            distance_loss["factor"],
+            end_loss["factor"],
+            direction_loss["factor"],
+        ]
+        self.distance_loss = loss_func(distance_loss["loss"], **distance_loss["args"])
+        self.end_loss = loss_func(end_loss["loss"], **end_loss["args"])
+        self.direction_loss = loss_func(
+            direction_loss["loss"], **direction_loss["args"]
+        )
 
-    def forward(self, x):
-        raise NotImplementedError
+    def forward(self, x, y):
+        distance_loss = self.distance_loss(x[:, :1, :, :], y[:, :1, :, :])
+        end_loss = self.end_loss(x[:, 1:2, :, :], y[:, 1:2, :, :])
+        direction_loss = self.direction_loss(x[:, 2:4, :, :], y[:, 2:4, :, :])
+
+        total_loss = (
+            self.factors[0] * distance_loss
+            + self.factors[1] * end_loss
+            + self.factors[2] * direction_loss
+        )
+        return {
+            "total_loss": total_loss,
+            "distance_loss": distance_loss,
+            "end_loss": end_loss,
+            "direction_loss": direction_loss,
+        }
