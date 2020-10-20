@@ -125,8 +125,8 @@ def train(opt):
         )
     else:
         trainer = pl.Trainer(
-            gpus=opt.gpu,
-            distributed_backend=dist_backend,
+            # gpus=opt.gpu,
+            # distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
             limit_val_batches=configs["train"]["validation-batches"],
@@ -135,13 +135,12 @@ def train(opt):
             log_every_n_steps=configs["train"]["logger-interval"],
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
-            track_grad_norm=2,
             callbacks=[lr_monitor],
             profiler=opt.profile,
             # overfit_batches=100,
         )
 
-    comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
+    # comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
