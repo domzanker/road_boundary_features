@@ -21,20 +21,6 @@ from pytorch_lightning.core.lightning import ModelSummary
 import segmentation_models_pytorch as smp
 
 
-"""
-def get_learning_rate_suggestion(model, data_loader):
-    lr_trainer = pl.Trainer(accumulate_grad_batches=2)
-
-    lr_finder = lr_trainer.tuner.lr_find(model=model, train_dataloader=data_loader)
-
-    suggestion = lr_finder.suggestion()
-    plot = lr_finder.plot()
-
-    lr_trainer.accelerator_backend.teardown()
-
-    return suggestion, plot
-"""
-
 data_dict = {
     "road_boundary_dataset": RoadBoundaryDataset,
     "image_dataset": ImageDataset,
@@ -100,12 +86,9 @@ def train(opt):
     )
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
-    if opt.load_model or opt.resume_training:
+    if opt.checkpoint is not None:
 
-        if opt.checkpoint is not None:
-            checkpoint_file = opt.checkpoint
-        else:
-            raise NotImplementedError
+        checkpoint_file = opt.checkpoint
 
         if opt.autoencoder:
             model = AutoEncoder.load_from_checkpoint(checkpoint_file)
@@ -124,15 +107,6 @@ def train(opt):
         experiment_name=opt.tag,
     )
 
-    """
-    if opt.find_lr and os.environ.get("LOCAL_RANK", 0) == 0:
-        suggested_lr, fig = get_learning_rate_suggestion(model, train_loader)
-        print("Using suggested learning rate of : ", suggested_lr)
-        configs["train"]["learning-rate"] = suggested_lr
-        logger.log_graph(fig)
-        logger.experiment.flush()
-    """
-
     if opt.resume_training:
         trainer = pl.Trainer(
             gpus=opt.gpu,
@@ -146,14 +120,12 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
-            # callbacks=[gpustats, lr_monitor],
             callbacks=[lr_monitor],
             profiler=opt.profile,
         )
     else:
         trainer = pl.Trainer(
             gpus=opt.gpu,
-            auto_select_gpus=True,
             distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
@@ -163,7 +135,6 @@ def train(opt):
             log_every_n_steps=configs["train"]["logger-interval"],
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
-            # callbacks=[gpustats, lr_monitor],
             track_grad_norm=2,
             callbacks=[lr_monitor],
             profiler=opt.profile,
@@ -188,7 +159,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
     parser.add_argument("--tag", type=str, default="training", help="")
-    parser.add_argument("--load_model", type=bool, default=False, help="")
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
 
