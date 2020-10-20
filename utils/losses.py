@@ -24,7 +24,7 @@ class CosineSimilarityLoss(Module):
 
     def forward(self, x, y):
 
-        dist = -self.cosine_similarity(x, y)
+        dist = 1 - torch.abs(self.cosine_similarity(x, y))
         if self.reduction == "none":
             return dist
         elif self.reduction == "sum":
