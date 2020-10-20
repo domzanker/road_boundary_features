@@ -11,7 +11,7 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
             "cross_entropy": CrossEntropyLoss(reduction=reduction, **kwargs),
             "bce": BCELoss(reduction=reduction, **kwargs),
             "nll": NLLLoss(reduction=reduction, **kwargs),
-            "cosine_similarity": torch.nn.CosineSimilarity(),
+            "cosine_similarity": CosineSimilarityLoss(reduction=reduction, **kwargs),
         }
     )[loss]
 
@@ -24,7 +24,7 @@ class CosineSimilarityLoss(Module):
 
     def forward(self, x, y):
 
-        dist = self.cosine_similarity(x, y)
+        dist = -self.cosine_similarity(x, y)
         if self.reduction == "none":
             return dist
         elif self.reduction == "sum":
