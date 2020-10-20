@@ -164,6 +164,7 @@ def train(opt):
             log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             # callbacks=[gpustats, lr_monitor],
+            track_grad_norm=2,
             callbacks=[lr_monitor],
             profiler=opt.profile,
             # overfit_batches=100,
