@@ -28,9 +28,9 @@ class CosineSimilarityLoss(Module):
         if self.reduction == "none":
             return dist
         elif self.reduction == "sum":
-            return dist.sum
+            return dist.sum()
         elif self.reduction == "mean":
-            return dist.sum / (dist.mean + 1e-8)
+            return dist.sum() / (dist.mean() + 1e-8)
         else:
             raise NotImplementedError
 
