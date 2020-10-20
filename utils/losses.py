@@ -1,5 +1,6 @@
 from torch.nn import ModuleDict, ModuleList, Module
-from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss, CosineEmbeddingLoss
+from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss, CosineSimilarity
+import torch.nn
 from typing import Optional, Callable, Union, List, Dict
 
 
@@ -10,9 +11,28 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
             "cross_entropy": CrossEntropyLoss(reduction=reduction, **kwargs),
             "bce": BCELoss(reduction=reduction, **kwargs),
             "nll": NLLLoss(reduction=reduction, **kwargs),
-            "cosine_similarity": CosineEmbeddingLoss(reduction=reduction, **kwargs),
+            "cosine_similarity": CosineSimilarityLoss(reduction=reduction, **kwargs),
         }
     )[loss]
+
+
+class CosineSimilarityLoss(Module):
+    def __init__(self, reduction, *args, **kwargs):
+        super(CosineSimilarityLoss, self).__init__()
+        self.cosine_similarity = CosineSimilarity()
+        self.reduction = reduction
+
+    def forward(self, x, y):
+
+        dist = self.cosine_similarity(x, y)
+        if self.reduction == "none":
+            return dist
+        elif self.reduction == "sum":
+            return dist.sum
+        elif self.reduction == "mean":
+            return dist.sum / (dist.mean + 1e-8)
+        else:
+            raise NotImplementedError
 
 
 class MultiFeaturesLoss(Module):
