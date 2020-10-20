@@ -11,7 +11,7 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
             "cross_entropy": CrossEntropyLoss(reduction=reduction, **kwargs),
             "bce": BCELoss(reduction=reduction, **kwargs),
             "nll": NLLLoss(reduction=reduction, **kwargs),
-            "cosine_similarity": CosineSimilarityLoss(reduction=reduction, **kwargs),
+            "cosine_similarity": torch.nn.CosineSimilarity(),
         }
     )[loss]
 
