@@ -1,8 +1,8 @@
 dataset:
         name: "road_boundary_dataset"
-        size: [640, 360]
+        #size: [640, 360]
         #size: [1280, 720]
-        #size: null
+        size: null
         train-dataset: "data/nuscenes-complete-15x10/train"
         valid-dataset: "data/nuscenes-complete-15x10/valid"
         test-dataset: "data/nuscenes-complete-15x10/test"
@@ -12,7 +12,7 @@ train:
         lr-decay: 0.1
         lr_decay_step_size: 1
         batch-size: 4
-        weight_decay: 1e-5
+        weight_decay: 1e-1
 
         loss: "mse"
         loss-args: 
