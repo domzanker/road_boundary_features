@@ -43,6 +43,15 @@ def train(opt):
         else:
             dist_backend = None
 
+    find_lr = False
+    if opt.find_lr:
+        if dist_backend is not None:
+            print(
+                "Learning rate finder is not implemented for distributed environment!"
+            )
+        else:
+            find_lr = True
+
     if "input_size" in configs["model"]:
         configs["dataset"]["size"] = configs["model"]["input_size"]
     if not configs["model"]["use_custom"]:
@@ -141,6 +150,16 @@ def train(opt):
         )
 
     comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
+
+    if find_lr:
+        lr_finder = trainer.tuner.lr_find(model)
+        new_lr = lr_finder.suggestion()
+        model.hparams.learning_rate = new_lr
+
+        fig = lr_finder.plot(suggest=True)
+        logger.experiment.add_figure(tag="Learning rate finder", figure=fig)
+        comet_logger.experiment.log_figure("Learning rate finder", figure=fig)
+
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
