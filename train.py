@@ -153,6 +153,7 @@ def train(opt):
     if find_lr:
         lr_finder = trainer.tuner.lr_find(model, train_loader)
         new_lr = lr_finder.suggestion()
+        print("using learning rate suggestion %s" % new_lr)
         model.hparams.learning_rate = new_lr
 
         fig = lr_finder.plot(suggest=True)
