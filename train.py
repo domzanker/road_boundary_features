@@ -140,7 +140,7 @@ def train(opt):
             # overfit_batches=100,
         )
 
-    # comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
+    comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
 
