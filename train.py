@@ -145,6 +145,7 @@ def train(opt):
             checkpoint_callback=checkpoint_callback,
             callbacks=[lr_monitor],
             profiler=opt.profile,
+            auto_lr_find=find_lr
             # overfit_batches=100,
         )
 
@@ -155,10 +156,11 @@ def train(opt):
         new_lr = lr_finder.suggestion()
         print("using learning rate suggestion %s" % new_lr)
         model.hparams.learning_rate = new_lr
+        model.learning_rate = new_lr
 
         fig = lr_finder.plot(suggest=True)
-        logger.experiment.add_figure(tag="Learning rate finder", figure=fig)
-        comet_logger.experiment.log_figure("Learning rate finder", figure=fig)
+        logger.experiment.add_figure(tag="learning rate finder", figure=fig)
+        comet_logger.experiment.log_figure("learning rate finder", figure=fig)
 
     trainer.fit(model, train_loader, val_dataloaders=val_loader)
 
