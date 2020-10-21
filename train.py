@@ -99,9 +99,9 @@ def train(opt):
         checkpoint_file = opt.checkpoint
 
         if opt.autoencoder:
-            model = AutoEncoder.load_from_checkpoint(checkpoint_file)
+            model = AutoEncoder.load_from_checkpoint(checkpoint_file, strict=False)
         else:
-            model = FeatureNet.load_from_checkpoint(checkpoint_file)
+            model = FeatureNet.load_from_checkpoint(checkpoint_file, strict=False)
     else:
         if opt.autoencoder:
             model = AutoEncoder(configs=configs)
@@ -182,6 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
 
+    parser.add_argument("--use_encoder", action="store_true", default=False, help="")
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
     parser.add_argument("--find_lr", action="store_true", default=False, help="")
