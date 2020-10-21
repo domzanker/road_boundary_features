@@ -152,7 +152,7 @@ def train(opt):
     comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
 
     if find_lr:
-        lr_finder = trainer.tuner.lr_find(model)
+        lr_finder = trainer.tuner.lr_find(model, train_loader)
         new_lr = lr_finder.suggestion()
         model.hparams.learning_rate = new_lr
 
