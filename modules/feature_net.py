@@ -86,14 +86,13 @@ class FeatureNet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        target = y
 
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        losses = self.loss(segmentation, target)
+        losses = self.loss(segmentation, y)
 
         # logging to tensorboard
         self.log("train_loss", losses["total_loss"])
@@ -108,14 +107,12 @@ class FeatureNet(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        target = y
-
         prec = self.encoder_prec(x)
         encoding = self.encoder(prec)
         decoding = self.decoder(*encoding)
         segmentation = self.head(decoding)
 
-        losses = self.loss(segmentation, target)
+        losses = self.loss(segmentation, y)
 
         loss_dict = {
             "train_distance_loss": losses["distance_loss"].detach(),
