@@ -28,6 +28,7 @@ class AutoEncoder(FeatureNet):
             kernel_size=1,
             padding=self.encoder_prec.padding,
         )
+        self.loss = loss_func("mse")
 
     def training_step(self, batch, batch_idx):
         with self.logger[1].experiment.train():
