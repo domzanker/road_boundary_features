@@ -27,6 +27,24 @@ data_dict = {
 }
 
 
+def find_gpu_configs(opt):
+    if opt.gpu is not None:
+        if opt.gpu[0] == -1:
+            gpu = -1
+        else:
+            gpu = opt.gpu
+        if len(gpu) > 1:
+            backend = "ddp"
+        else:
+            backend = None
+
+    else:
+        backend = None
+        gpu = opt.gpu
+
+    return gpu, backend
+
+
 def train(opt):
     with Path(opt.configs).open("rb") as f:
         configs = yaml.load(f, Loader)
@@ -34,14 +52,7 @@ def train(opt):
     if opt.batch_size != 0:
         configs["train"]["batch-size"] = opt.batch_size
 
-    dist_backend = "ddp"
-    if opt.gpu == 0:
-        pass
-    elif len(opt.gpu) == 1:
-        if opt.gpu[0] == -1:
-            opt.gpu = -1
-        else:
-            dist_backend = None
+    gpu, dist_backend = find_gpu_configs(opt)
 
     find_lr = False
     if opt.find_lr:
@@ -117,7 +128,7 @@ def train(opt):
 
     if opt.resume_training:
         trainer = pl.Trainer(
-            gpus=opt.gpu,
+            gpus=gpu,
             distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
@@ -133,8 +144,7 @@ def train(opt):
         )
     else:
         trainer = pl.Trainer(
-            gpus=opt.gpu,
-            auto_select_gpus=True,
+            gpus=gpu,
             distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
@@ -171,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
     )
-    parser.add_argument("--gpu", type=int, default=0, nargs="+", help="gpu")
+    parser.add_argument("--gpu", default=None, nargs="+", help="gpu")
     parser.add_argument(
         "--accumulate_grad_batches", type=int, default=2, help="accumulate_grad_batches"
     )
