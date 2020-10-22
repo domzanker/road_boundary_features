@@ -125,9 +125,9 @@ class FeatureNet(pl.LightningModule):
         tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
-                "val_loss": losses["total_loss"],
-                "val_mse": self.val_mse(pred, tar),
-                "val_dist_accuracy": self.val_dist_accuracy(pred, tar),
+                "val_loss": losses["total_loss"].item(),
+                "val_mse": self.val_mse(pred, tar).item(),
+                "val_dist_accuracy": self.val_dist_accuracy(pred, tar).item(),
             },
             on_step=False,
             on_epoch=True,
