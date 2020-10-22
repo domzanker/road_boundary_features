@@ -157,7 +157,6 @@ class AEDecoder(Module):
         self.blocks = Sequential(*decoder_blocks)
 
     def forward(self, *features):
-        features = features[::-1]
-        x = features[0]
+        x = features[-1]
         x = self.blocks(x)
         return x
