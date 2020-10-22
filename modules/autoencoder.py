@@ -66,8 +66,8 @@ class AutoEncoder(FeatureNet):
         tensorboard = self.logger[0].experiment
         comet = self.logger[1].experiment
 
-        prediction = torch.cat([t["prediction"] for t in outputs])
-        x = torch.cat([t["input"] for t in outputs])
+        prediction = torch.cat([t["prediction"] for t in outputs]).cpu()
+        x = torch.cat([t["input"] for t in outputs]).cpu()
 
         nmbr_images = self.train_configs["nmbr-logged-images"]
         nrows = 12
