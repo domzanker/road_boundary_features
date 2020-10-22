@@ -134,6 +134,7 @@ def train(opt):
     else:
         trainer = pl.Trainer(
             gpus=opt.gpu,
+            auto_select_gpus=True,
             distributed_backend=dist_backend,
             accumulate_grad_batches=opt.accumulate_grad_batches,
             max_epochs=configs["train"]["epochs"],
