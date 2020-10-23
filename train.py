@@ -35,6 +35,7 @@ def find_gpu_configs(opt):
             gpu = opt.gpu
         if len(gpu) > 1:
             backend = opt.distributed_backend
+            os.environ["CUDA_VISIBLE_DEVICE"] = ",".join(gpu)
         else:
             backend = None
 
