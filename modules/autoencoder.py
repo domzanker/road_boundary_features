@@ -19,7 +19,7 @@ class AutoEncoder(FeatureNet):
         self.encoder_prec = Conv2dAuto(
             in_channels=4,
             out_channels=self.model_configs["encoder"]["in_channels"][0],
-            kernel_size=1,
+            kernel_size=7,
         )
 
         self.head = Sequential(
@@ -27,7 +27,7 @@ class AutoEncoder(FeatureNet):
                 scale_factor=4,
                 in_channels=64,
                 out_channels=4,
-                kernel_size=1,
+                kernel_size=3,
                 padding=self.encoder_prec.padding,
             ),
             activation_func("sigmoid"),
