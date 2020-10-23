@@ -177,7 +177,7 @@ class UpConvolution(Module):
         *args,
         **kwargs
     ):
-        super(UpConvolution, self).__init__(*args, **kwargs)
+        super(UpConvolution, self).__init__()
 
         self.upsample = torch.nn.UpsamplingNearest2d(scale_factor=scale_factor)
         self.conv = Conv2dAuto(
