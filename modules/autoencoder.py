@@ -142,15 +142,13 @@ class AEDecoder(Module):
 
         decoder_blocks = []
         for block in encoder.blocks[::-1]:
-            out_padding = 1  # TODO
-            conv = ConvTranspose2d(
+            conv = UpConvolution(
+                scale_factor=2,
                 in_channels=block.out_channels,
                 out_channels=block.in_channels,
                 kernel_size=3,
                 stride=2,
                 dilation=block.head_block.blocks[0].dilation,
-                padding=block.head_block.blocks[0].padding,
-                output_padding=out_padding,
             )
             decoder_blocks.append(conv)
             decoder_blocks.append(activation_func("relu"))
@@ -159,4 +157,33 @@ class AEDecoder(Module):
     def forward(self, *features):
         x = features[-1]
         x = self.blocks(x)
+        return x
+
+
+class UpConvolution(Module):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        dilation,
+        scale_factor,
+        *args,
+        **kwargs
+    ):
+        super(UpConvolution, self).__init__(*args, **kwargs)
+
+        self.upsample = torch.nn.UpsamplingNearest2d(scale_factor=scale_factor)
+        self.conv = Conv2dAuto(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            dilation=dilation,
+        )
+
+    def forward(self, x):
+        x = self.upsample(x)
+        x = self.conv(x)
         return x
