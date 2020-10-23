@@ -14,6 +14,8 @@ encoder:
         out_channels: [128, 256]
         kernel_size: 3
         dilation: 2
+        batch_norm: True
+        activation: "relu"
 
 decoder:
         decoder_depth: 2

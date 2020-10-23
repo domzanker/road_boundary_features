@@ -459,6 +459,8 @@ class EncoderBlock(Module):
             stride=[2, 1, 1],
             kernel_size=kernel_size[0],
             dilation=dilation[0],
+            *args,
+            **kwargs,
         )
         self.tail = Sequential(
             *[

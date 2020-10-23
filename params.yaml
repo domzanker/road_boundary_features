@@ -31,7 +31,7 @@ train:
                         args:
                                 reduction: "mean"
 
-        epochs: 50
+        epochs: 10
         validation-interval: 500
         validation-batches: 50
 

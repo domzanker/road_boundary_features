@@ -191,6 +191,7 @@ class ConvBlock(torch.nn.Module):
         dilation: Union[int, Tuple[int, int]] = 1,
         activation: str = "relu",
         batch_norm: bool = True,
+        dropout: float = 0.0,
     ):
         super(ConvBlock, self).__init__()
         if batch_norm:
@@ -207,12 +208,14 @@ class ConvBlock(torch.nn.Module):
             dilation=dilation,
         )
         self.activation = activation_func(activation)
+        self.dropout = torch.nn.Dropout2d(dropout, inplace=True)
 
     def forward(self, x: torch.Tensor):
         if self.batch_norm is not None:
             x = self.batch_norm(x)
         conv = self.conv(x)
-        return self.activation(conv)
+        drop = self.dropout(conv)
+        return self.activation(drop)
 
 
 class ResidualBlock(torch.nn.Module):
@@ -251,12 +254,14 @@ class ResidualBlock(torch.nn.Module):
 
         self.blocks = torch.nn.Sequential(
             *[
-                Conv2dAuto(
+                ConvBlock(
                     in_channels=in_channels[i],
                     out_channels=out_channels[i],
                     kernel_size=kernel_size[i],
                     stride=stride[i],
                     dilation=dilation[i],
+                    *args,
+                    **kwargs
                 )
                 for i in range(depth)
             ]

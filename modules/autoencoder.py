@@ -14,7 +14,6 @@ class AutoEncoder(FeatureNet):
     def __init__(self, configs):
         super(AutoEncoder, self).__init__(configs)
 
-        self.encoder_prec = Identity()
         self.decoder = AEDecoder(self.encoder)
         self.encoder_prec = Conv2dAuto(
             in_channels=4,
