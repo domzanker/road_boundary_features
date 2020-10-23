@@ -17,7 +17,7 @@ encoder:
 
 decoder:
         decoder_depth: 2
-        conv_per_block: 4
+        conv_per_block: 3
         blocks:
                 [
                         {
