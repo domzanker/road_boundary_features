@@ -24,7 +24,7 @@ class AutoEncoder(FeatureNet):
 
         self.head = Sequential(
             UpConvolution(
-                scale_factor=2,
+                scale_factor=4,
                 in_channels=64,
                 out_channels=4,
                 kernel_size=1,
