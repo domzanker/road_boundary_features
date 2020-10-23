@@ -63,7 +63,6 @@ class SegmentationHead(torch.nn.Module):
                     "out_channels": branch[1],
                     "kernel_sizes": branch[2],
                     "strides": branch[3],
-                    "padding": branch[4],
                     "dilation": branch[5],
                     "batch_norm": True,
                     "end_activation": "relu",
@@ -92,11 +91,6 @@ class SegmentationHead(torch.nn.Module):
             else:
                 dilation = branch["dilation"]
 
-            if not isinstance(branch["padding"], list):
-                padding = [branch["padding"] for _ in range(depth)]
-            else:
-                padding = branch["padding"]
-
             batch_norm = branch["batch_norm"]
             end_activation = branch["end_activation"]
 
@@ -108,7 +102,6 @@ class SegmentationHead(torch.nn.Module):
                     kernel_sizes=kernel_sizes,
                     strides=strides,
                     dilation=dilation,
-                    padding=padding,
                     end_activation=end_activation,
                     batch_norm=batch_norm,
                     upsample_mode=upsample_mode,
@@ -132,7 +125,6 @@ class SegmentationBranch(torch.nn.Module):
         kernel_sizes: Union[int, Tuple[int, int], List[Tuple[int, int]]],
         strides: Union[int, Tuple[int, int], List[int], List[Tuple[int, int]]],
         dilation: Union[int, Tuple[int, int], List[int], List[Tuple[int, int]]] = 1,
-        padding: Union[int, Tuple[int, int], List[int], List[Tuple[int, int]]] = 0,
         end_activation: str = "relu",
         batch_norm: bool = True,
         upsample_mode: str = "nearest",
@@ -145,8 +137,6 @@ class SegmentationBranch(torch.nn.Module):
             strides = [strides for _ in range(depth)]
         if not isinstance(dilation, list):
             dilation = [dilation for _ in range(depth)]
-        if not isinstance(padding, list):
-            padding = [padding for _ in range(depth)]
 
         activations = ["relu" for _ in range(depth)]
         activations[-1] = end_activation
@@ -163,7 +153,6 @@ class SegmentationBranch(torch.nn.Module):
                     in_channels=in_channels[i],
                     out_channels=out_channels[i],
                     kernel_size=kernel_sizes[i],
-                    padding=padding[i],
                     stride=strides[i],
                     dilation=dilation[i],
                     activation=activations[i],
