@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from typing import Optional, Tuple, Union, List, Dict, Any
 from torch.nn.common_types import _size_2_t
 import segmentation_models_pytorch as smp
@@ -20,31 +21,7 @@ def activation_func(activation: str):
 smp_models = {"linknet": smp.Linknet, "fpn": smp.FPN}
 
 
-class FeatureExtrationNet(torch.nn.Module):
-    def __init__(self, model_configs: Dict[str, Any]):
-        super(FeatureExtrationNet, self).__init__()
-
-        self.encoder_decoder = smp_models[model_configs["encoder_decoder_name"]](
-            **model_configs["encoder_decoder"]
-        )
-        if model_configs["encoder_decoder"]["encoder_weights"]:
-            self.preprocessing_params = smp.encoders.get_preprocessing_params(
-                encoder_name=model_configs["encoder_decoder"]["encoder_name"],
-                pretrained=model_configs["encoder_decoder"]["encoder_weights"],
-            )
-        else:
-            self.preprocessing_params = None
-
-        # self.head = SegmentationHead(**model_configs["head"])
-        self.head = torch.nn.Identity()
-
-    def forward(self, x):
-        x = self.encoder_decoder(x)
-        x = self.head(x)
-        return x
-
-
-class SegmentationHead(torch.nn.Module):
+class SegmentationHead(nn.Module):
     def __init__(
         self,
         branches: Union[List[List[int]], List[Dict[str, Any]]],
@@ -55,7 +32,7 @@ class SegmentationHead(torch.nn.Module):
 
         super(SegmentationHead, self).__init__()
 
-        self.branches = torch.nn.ModuleList()
+        self.branches = nn.ModuleList()
         for branch in branches:
             if isinstance(branch, list):
                 branch = {
@@ -116,7 +93,7 @@ class SegmentationHead(torch.nn.Module):
         return torch.cat(output, dim=1)
 
 
-class SegmentationBranch(torch.nn.Module):
+class SegmentationBranch(nn.Module):
     def __init__(
         self,
         depth: int,
@@ -143,11 +120,9 @@ class SegmentationBranch(torch.nn.Module):
 
         # TODO get out_channels
 
-        self.upsampling = torch.nn.Upsample(
-            scale_factor=scale_factor, mode=upsample_mode
-        )
+        self.upsampling = nn.Upsample(scale_factor=scale_factor, mode=upsample_mode)
 
-        self.conv_blocks = torch.nn.ModuleList(
+        self.conv_blocks = nn.ModuleList(
             [
                 ConvBlock(
                     in_channels=in_channels[i],
@@ -169,7 +144,7 @@ class SegmentationBranch(torch.nn.Module):
         return x
 
 
-class ConvBlock(torch.nn.Module):
+class ConvBlock(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -195,7 +170,7 @@ class ConvBlock(torch.nn.Module):
             dilation=dilation,
         )
         self.activation = activation_func(activation)
-        self.dropout = torch.nn.Dropout2d(dropout, inplace=True)
+        self.dropout = nn.Dropout2d(dropout, inplace=True)
 
     def forward(self, x: torch.Tensor):
         conv = self.conv(x)
@@ -204,7 +179,7 @@ class ConvBlock(torch.nn.Module):
         return self.activation(norm)
 
 
-class ResidualBlock(torch.nn.Module):
+class ResidualBlock(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -238,7 +213,7 @@ class ResidualBlock(torch.nn.Module):
         if not isinstance(out_channels, list):
             out_channels = [out_channels for _ in range(depth)]
 
-        self.blocks = torch.nn.Sequential(
+        self.blocks = nn.Sequential(
             *[
                 ConvBlock(
                     in_channels=in_channels[i],
@@ -254,11 +229,11 @@ class ResidualBlock(torch.nn.Module):
         )
 
         if batch_norm:
-            self.normalize = torch.nn.BatchNorm2d(out_channels[-1])
+            self.normalize = nn.BatchNorm2d(out_channels[-1])
         else:
-            self.normalize = torch.nn.Identity()
+            self.normalize = nn.Identity()
         self.activate = activation_func(activation)
-        self.shortcut = torch.nn.Identity()
+        self.shortcut = nn.Identity()
 
     def forward(self, x):
 
@@ -276,7 +251,7 @@ class ResidualBlock(torch.nn.Module):
         return self.in_channels != self.out_channels
 
 
-class Conv2dAuto(torch.nn.Conv2d):
+class Conv2dAuto(nn.Conv2d):
     def __init__(self, *args, **kwargs):
         super(Conv2dAuto, self).__init__(*args, **kwargs)
         self.padding = (
@@ -284,6 +259,33 @@ class Conv2dAuto(torch.nn.Conv2d):
             // 2,
             (self.kernel_size[1] + (self.kernel_size[1] - 1) * (self.dilation[1] - 1))
             // 2,
+        )
+
+
+class Interpolate(nn.Module):
+    def __init__(
+        self,
+        size=None,
+        scale_factor=None,
+        mode="nearest",
+        align_corners=None,
+        recompute_scale_factor=None,
+    ):
+        super(Interpolate, self).__init__()
+        self.size = size
+        self.scale_factor = scale_factor
+        self.mode = mode
+        self.align_corners = align_corners
+        self.recompute_scale_factor = recompute_scale_factor
+
+    def forward(self, x):
+        return torch.nn.functional.interpolate(
+            x,
+            size=self.size,
+            scale_factor=self.scale_factor,
+            mode=self.mode,
+            align_corners=self.align_corners,
+            recompute_scale_factor=self.recompute_scale_factor,
         )
 
 
