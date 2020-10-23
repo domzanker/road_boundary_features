@@ -170,10 +170,10 @@ class UpConvolution(Module):
         self,
         in_channels,
         out_channels,
-        kernel_size,
-        stride,
-        dilation,
-        scale_factor,
+        kernel_size=3,
+        stride=1,
+        dilation=1,
+        scale_factor=1,
         *args,
         **kwargs
     ):
