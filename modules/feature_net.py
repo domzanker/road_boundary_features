@@ -309,7 +309,8 @@ class Decoder(Module):
         features = features[::-1]
 
         x = features[0]
-        skips = features[1:]
+        skips = features
+        skips[0] = None
 
         for i, block in enumerate(self.blocks):
             skip = skips[i] if i < len(skips) else None
@@ -382,13 +383,15 @@ class DecoderBlock(Module):
             )
 
     def forward(self, x, skip=None):
+
+        if skip is not None:
+            x = x + skip
+
         x = self.upsample(x)
         for i, layer in enumerate(self.block):
             x = self.instance_normalize[i](x)
             x = layer(x)
             x = self.activate(x)
-        if skip is not None:
-            x = x + skip
         return x
 
 
