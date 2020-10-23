@@ -34,7 +34,7 @@ def find_gpu_configs(opt):
         else:
             gpu = opt.gpu
         if len(gpu) > 1:
-            backend = "ddp"
+            backend = opt.distributed_backend
         else:
             backend = None
 
@@ -182,6 +182,7 @@ if __name__ == "__main__":
         "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
     )
     parser.add_argument("--gpu", default=None, nargs="+", help="gpu")
+    parser.add_argument("--distributed_backend", default="ddp", help="gpu")
     parser.add_argument(
         "--accumulate_grad_batches", type=int, default=2, help="accumulate_grad_batches"
     )
