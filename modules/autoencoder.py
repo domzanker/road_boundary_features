@@ -22,12 +22,17 @@ class AutoEncoder(FeatureNet):
             kernel_size=1,
         )
 
-        self.head = ConvTranspose2d(
-            in_channels=64,
-            out_channels=4,
-            kernel_size=1,
-            padding=self.encoder_prec.padding,
+        self.head = Sequential(
+            UpConvolution(
+                scale_factor=2,
+                in_channels=64,
+                out_channels=4,
+                kernel_size=1,
+                padding=self.encoder_prec.padding,
+            ),
+            activation_func("sigmoid"),
         )
+
         self.loss = loss_func("mse")
 
     def training_step(self, batch, batch_idx):
