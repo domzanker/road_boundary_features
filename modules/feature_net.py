@@ -115,9 +115,9 @@ class FeatureNet(pl.LightningModule):
         losses = self.loss(segmentation, y)
 
         loss_dict = {
-            "train_distance_loss": losses["distance_loss"].detach(),
-            "train_end_loss": losses["end_loss"].detach(),
-            "train_direction_loss": losses["direction_loss"].detach(),
+            "val_distance_loss": losses["distance_loss"].detach(),
+            "val_end_loss": losses["end_loss"].detach(),
+            "val_direction_loss": losses["direction_loss"].detach(),
         }
         self.log_dict(loss_dict)
 
@@ -517,33 +517,6 @@ class AEHead(Module):
 
     def forward(self, x):
         return self.head(x)
-
-
-class Interpolate(Module):
-    def __init__(
-        self,
-        size=None,
-        scale_factor=None,
-        mode="nearest",
-        align_corners=None,
-        recompute_scale_factor=None,
-    ):
-        super(Interpolate, self).__init__()
-        self.size = size
-        self.scale_factor = scale_factor
-        self.mode = mode
-        self.align_corners = align_corners
-        self.recompute_scale_factor = recompute_scale_factor
-
-    def forward(self, x):
-        return torch.nn.functional.interpolate(
-            x,
-            size=self.size,
-            scale_factor=self.scale_factor,
-            mode=self.mode,
-            align_corners=self.align_corners,
-            recompute_scale_factor=self.recompute_scale_factor,
-        )
 
 
 if __name__ == "__main__":
