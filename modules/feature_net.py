@@ -135,9 +135,9 @@ class FeatureNet(pl.LightningModule):
 
         return {
             "loss": losses["total_loss"].detach(),
-            "y": y.detach(),
-            "pred": segmentation.detach(),
-            "x": x.detach(),
+            "y": y.detach().cpu(),
+            "pred": segmentation.detach().cpu(),
+            "x": x.detach().cpu(),
         }
 
     def validation_epoch_end(self, outputs):
