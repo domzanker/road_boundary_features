@@ -8,7 +8,13 @@ from torch.nn.common_types import _size_2_t
 from torchvision.utils import make_grid
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from utils.modules import Conv2dAuto, ResidualBlock, SegmentationHead, activation_func
+from utils.modules import (
+    ConvBlock,
+    Conv2dAuto,
+    ResidualBlock,
+    SegmentationHead,
+    activation_func,
+)
 from utils.losses import MultiFeaturesLoss
 
 from utils.dataset import RoadBoundaryDataset
@@ -28,7 +34,7 @@ class FeatureNet(pl.LightningModule):
         if self.model_configs["use_custom"]:
 
             self.encoder_prec = Sequential(
-                Conv2dAuto(
+                ConvBlock(
                     in_channels=self.model_configs["input_channels"],
                     **self.model_configs["encoder_prec"],
                 ),
