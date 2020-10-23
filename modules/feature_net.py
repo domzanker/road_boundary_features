@@ -309,8 +309,7 @@ class Decoder(Module):
         features = features[::-1]
 
         x = features[0]
-        skips = features
-        skips[0] = None
+        skips = [None, *features[1:]]
 
         for i, block in enumerate(self.blocks):
             skip = skips[i] if i < len(skips) else None
