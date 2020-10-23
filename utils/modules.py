@@ -187,7 +187,6 @@ class ConvBlock(torch.nn.Module):
         out_channels: int,
         kernel_size: Union[int, Tuple[int, int]],
         stride: Union[int, Tuple[int, int]],
-        padding: Union[int, Tuple[int, int]] = 0,
         dilation: Union[int, Tuple[int, int]] = 1,
         activation: str = "relu",
         batch_norm: bool = True,
@@ -199,11 +198,10 @@ class ConvBlock(torch.nn.Module):
         else:
             self.batch_norm = torch.nn.Identity()
 
-        self.conv = torch.nn.Conv2d(
+        self.conv = Conv2dAuto(
             in_channels=in_channels,
             out_channels=out_channels,
             kernel_size=kernel_size,
-            padding=padding,
             stride=stride,
             dilation=dilation,
         )
