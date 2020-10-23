@@ -195,9 +195,9 @@ class ConvBlock(torch.nn.Module):
     ):
         super(ConvBlock, self).__init__()
         if batch_norm:
-            self.batch_norm = torch.nn.BatchNorm2d(in_channels)
+            self.batch_norm = torch.nn.BatchNorm2d(out_channels)
         else:
-            self.batch_norm = None
+            self.batch_norm = torch.nn.Identity()
 
         self.conv = torch.nn.Conv2d(
             in_channels=in_channels,
@@ -211,11 +211,10 @@ class ConvBlock(torch.nn.Module):
         self.dropout = torch.nn.Dropout2d(dropout, inplace=True)
 
     def forward(self, x: torch.Tensor):
-        if self.batch_norm is not None:
-            x = self.batch_norm(x)
         conv = self.conv(x)
         drop = self.dropout(conv)
-        return self.activation(drop)
+        norm = self.batch_norm(drop)
+        return self.activation(norm)
 
 
 class ResidualBlock(torch.nn.Module):
@@ -268,7 +267,7 @@ class ResidualBlock(torch.nn.Module):
         )
 
         if batch_norm:
-            self.normalize = torch.nn.BatchNorm2d(self.out_channels[-1])
+            self.normalize = torch.nn.BatchNorm2d(out_channels[-1])
         else:
             self.normalize = torch.nn.Identity()
         self.activate = activation_func(activation)
