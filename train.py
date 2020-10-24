@@ -125,6 +125,7 @@ def train(opt):
         save_dir="data/comet_ml",
         project_name="road-boundary-features",
         experiment_name=opt.tag,
+        experiment_key=opt.comet,
     )
 
     if opt.resume_training:
@@ -194,6 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("--tag", type=str, default="training", help="")
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
+    parser.add_argument("--comet", type=str, default=None, help="")
 
     parser.add_argument("--use_encoder", action="store_true", default=False, help="")
     parser.add_argument("--profile", action="store_true", default=False, help="")
