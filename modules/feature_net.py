@@ -299,7 +299,12 @@ class FeatureNet(pl.LightningModule):
 
 class Decoder(Module):
     def __init__(
-        self, decoder_depth: int, conv_per_block: int, blocks: List[Dict[str, Any]]
+        self,
+        decoder_depth: int,
+        conv_per_block: int,
+        blocks: List[Dict[str, Any]],
+        *args,
+        **kwargs,
     ):
         super(Decoder, self).__init__()
         self.blocks = torch.nn.ModuleList(
@@ -336,6 +341,8 @@ class DecoderBlock(Module):
         upsampling_mode: str = "nearest",
         upsampling: Optional[_size_2_t] = 2,
         apply_instance_norm: bool = False,
+        *args,
+        **kwargs,
     ):
         super(DecoderBlock, self).__init__()
         # every decoder block
@@ -355,17 +362,20 @@ class DecoderBlock(Module):
 
         self.block = torch.nn.ModuleList(
             [
-                Conv2dAuto(
+                ConvBlock(
                     in_channels=in_channels[i],
                     out_channels=out_channels[i],
                     kernel_size=kernel_size[i],
                     stride=stride[i],
                     dilation=dilation[i],
+                    batch_norm=False,
+                    activation=activation,
+                    *args,
+                    **kwargs,
                 )
                 for i in range(nmbr_convs)
             ]
         )
-        self.activate = activation_func(activation)
         if isinstance(upsampling, list):
             size = upsampling
             factor = None
@@ -396,7 +406,6 @@ class DecoderBlock(Module):
         for i, layer in enumerate(self.block):
             x = self.instance_normalize[i](x)
             x = layer(x)
-            x = self.activate(x)
         return x
 
 
