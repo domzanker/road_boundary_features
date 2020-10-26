@@ -148,9 +148,6 @@ class FeatureNet(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
 
-        tensorboard = self.logger[0].experiment
-        comet = self.logger[1].experiment
-
         y = torch.cat([t["y"] for t in outputs]).detach().cpu()
         x = torch.cat([t["x"] for t in outputs]).detach().cpu()
         pred = torch.cat([t["pred"] for t in outputs]).detach().cpu()
@@ -161,126 +158,54 @@ class FeatureNet(pl.LightningModule):
         # log out out
         dist = y[:, 0:1, :, :]
         dist_dbg = make_grid(apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows)
-
-        tensorboard.add_image(
-            tag="distance map",
-            img_tensor=dist_dbg,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            dist_dbg,
-            name="distance map",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(dist_dbg, "validation distance map")
 
         end = y[:, 1:2, :, :]
         end_dgb = make_grid(apply_colormap(end[:nmbr_images, :, :, :]), nrow=nrows)
-
-        tensorboard.add_image(
-            tag="end map",
-            img_tensor=end_dgb,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            end_dgb,
-            name="end map",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(end_dgb, "validation end point map")
 
         direc = y[:, 2:4, :, :]
         dir_dbg = make_grid(angle_map(direc[:nmbr_images, :, :, :]), nrow=nrows)
-
-        tensorboard.add_image(
-            tag="direction map",
-            img_tensor=dir_dbg,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            dir_dbg,
-            name="direction map",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(dir_dbg, "validation direction map")
 
         pred = pred
-        # log out out
         dist = pred[:, 0:1, :, :].detach()
         dist_pred = make_grid(apply_colormap(dist[:nmbr_images, :, :, :]), nrow=nrows)
-        tensorboard.add_image(
-            img_tensor=dist_pred,
-            tag="distance pred",
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            dist_pred,
-            name="distance pred",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(dist_pred, "validation distance prediction")
+        dist_comp = make_grid([dist_dbg, dist_pred], nrow=1)
+        self._log_image(dist_comp, "validation distance comparison")
 
         end = pred[:, 1:2, :, :].detach()
         end_pred = make_grid(apply_colormap(end[:nmbr_images, :, :, :]), nrow=nrows)
-        tensorboard.add_image(
-            img_tensor=end_pred,
-            tag="end pred",
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            end_pred,
-            name="end pred",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(end_pred, "validation end point prediction")
+        end_comp = make_grid([end_dgb, end_pred], nrow=1)
+        self._log_image(end_comp, "validation end point comparison")
 
         direc = pred[:, 2:4, :, :].detach()
         dir_pred = make_grid(angle_map(direc[:nmbr_images, :, :, :]), nrow=nrows)
-        tensorboard.add_image(
-            img_tensor=dir_pred,
-            tag="direction pred",
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            dir_pred,
-            name="direction pred",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(dir_pred, "validation direction prediction")
+        dir_comp = make_grid([dir_dbg, dir_pred], nrow=1)
+        self._log_image(dir_comp, "validation direction comparison")
 
         lid = x[:, 3:, :, :]
         lid -= lid.min()
         lid /= lid.max()
         lid = make_grid(apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows)
-        tensorboard.add_image(
-            tag="valid input lidar",
-            img_tensor=lid,
-            dataformats="CHW",
-            global_step=self.trainer.global_step,
-        )
-        comet.log_image(
-            lid,
-            name="valid input lidar",
-            image_channels="first",
-            step=self.trainer.global_step,
-        )
+        self._log_image(lid, "validation lidar input")
 
         rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
-        tensorboard.add_image(
-            tag="valid input rgb",
-            img_tensor=rgb,
+        self._log_image(rgb, "validation input rgb")
+
+    def _log_image(self, img, tag):
+        self.logger[0].experiment.add_image(
+            tag=tag,
+            img_tensor=img,
             dataformats="CHW",
             global_step=self.trainer.global_step,
         )
-        comet.log_image(
-            rgb,
-            name="valid input rgb",
+        self.logger[1].experiment.log_image(
+            img,
+            name=tag,
             image_channels="first",
             step=self.trainer.global_step,
         )
