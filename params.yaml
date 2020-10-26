@@ -11,20 +11,20 @@ train:
         gpus: 0
         distributed_backend: null
         log_gpu_memory: True
-        profiler: True
+        profiler: False
 
         learning-rate: 0.05
         lr-decay: 0.1
         lr_decay_step_size: 1
         weight_decay: 1e-1
 
-        batch-size: 4
-        accumulate_grad_batches: 5
+        batch-size: 7
+        accumulate_grad_batches: 4
 
         losses: 
                 distance_loss: 
                         loss: "mse"
-                        factor: 10.0
+                        factor: 1.0
                         args:
                                 reduction: "mean"
                 end_loss: 
@@ -34,11 +34,11 @@ train:
                                 reduction: "mean"
                 direction_loss: 
                         loss: "cosine_similarity"
-                        factor: 1.0
+                        factor: 10.0
                         args:
                                 reduction: "mean"
 
-        epochs: 10
+        epochs: 100
         validation-interval: 0.25
         validation-batches: 50
 
