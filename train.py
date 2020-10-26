@@ -73,7 +73,7 @@ def trainer_configs(opt, configs):
         "val_check_interval": configs["train"]["validation-interval"],
         "log_every_n_steps": configs["train"]["logger-interval"],
         "log_gpu_memory": True,
-        "profiler": opt.profiler,
+        "profiler": opt.profile,
     }
     if "trainer_args" in configs["train"].keys():
         for key, value in configs["train"]["trainer_args"].items():
@@ -83,7 +83,9 @@ def trainer_configs(opt, configs):
 
 def train(opt):
     with Path(opt.configs).open("rb") as f:
-        configs = yaml.load(f, Loader)
+        configs = yaml.safe_load(f)
+    with Path(configs["model"]).open("rb") as f:
+        configs["model"] = yaml.safe_load(f)
 
     if opt.batch_size != 0:
         configs["train"]["batch-size"] = opt.batch_size
@@ -134,10 +136,10 @@ def train(opt):
     # FIXME
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
+    checkpoint_callback = ModelCheckpoint(
+        filepath="data/checkpoints/" + opt.name + "-{epoch}", period=1, verbose=True
+    )
     if opt.checkpoint is not None:
-        checkpoint_callback = ModelCheckpoint(
-            filepath="data/checkpoints/" + opt.name + "/{epoch}", period=1, verbose=True
-        )
 
         checkpoint_file = opt.checkpoint
 
@@ -146,20 +148,22 @@ def train(opt):
         else:
             model = FeatureNet.load_from_checkpoint(checkpoint_file, strict=False)
     else:
-        clean_dir("data/checkpoints/" + opt.name)
+        # clean_dir("data/checkpoints/" + opt.name)
         if opt.autoencoder:
             model = AutoEncoder(configs=configs)
         else:
             model = FeatureNet(configs=configs)
 
-    logger = TensorBoardLogger("data/tensorboard", opt.tag)
-    clean_dir("data/comet_ml/")
+    logger = TensorBoardLogger("data/tensorboard", opt.name)
+    # clean_dir("data/comet_ml/")
     comet_logger = CometLogger(
         save_dir="data/comet_ml",
         project_name="road-boundary-features",
         experiment_name=opt.name,
         experiment_key=opt.comet,
     )
+    comet_logger.experiment.add_tag(opt.name)
+    comet_logger.experiment.add_tags(opt.tags)
 
     if opt.resume_training:
         trainer = pl.Trainer(
