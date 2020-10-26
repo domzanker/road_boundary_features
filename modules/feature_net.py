@@ -70,10 +70,14 @@ class FeatureNet(pl.LightningModule):
         self.loss = MultiFeaturesLoss(**self.train_configs["losses"])
 
         self.train_mse = pl.metrics.MeanSquaredError()
-        self.train_dist_accuracy = pl.metrics.Accuracy()
+        self.train_dist_mse = pl.metrics.MeanSquaredError()
+        self.train_end_mse = pl.metrics.MeanSquaredError()
+        self.train_dir_mse = pl.metrics.MeanSquaredError()
 
-        self.val_mse = pl.metrics.MeanSquaredError()
-        self.val_dist_accuracy = pl.metrics.Accuracy()
+        self.val_dir_mse = pl.metrics.MeanSquaredError()
+        self.val_dist_mse = pl.metrics.MeanSquaredError()
+        self.val_end_mse = pl.metrics.MeanSquaredError()
+        self.val__mse = pl.metrics.MeanSquaredError()
 
         self.save_hyperparameters()
 
@@ -109,6 +113,21 @@ class FeatureNet(pl.LightningModule):
         }
         self.log_dict(loss_dict)
 
+        self.log_dict(
+            {
+                "train_mse": self.train_mse(segmentation, y).item(),
+                "train_dist_mse": self.train_dist_mse(
+                    segmentation[:, :1], y[:, :1]
+                ).item(),
+                "train_end_mse": self.train_end_mse(
+                    segmentation[:, 1:2], y[:, 1:2]
+                ).item(),
+                "train_dir_mse": self.train_dir_mse(
+                    segmentation[:, 2:4], y[:, 2:4]
+                ).item(),
+            }
+        )
+
         return losses["total_loss"]
 
     def validation_step(self, batch, batch_idx):
@@ -127,13 +146,13 @@ class FeatureNet(pl.LightningModule):
         }
         self.log_dict(loss_dict)
 
-        pred = segmentation[:, :1, :, :].detach()
-        tar = y[:, :1, :, :].detach()
         self.log_dict(
             {
                 "val_loss": losses["total_loss"].item(),
-                "val_mse": self.val_mse(pred, tar).item(),
-                "val_dist_accuracy": self.val_dist_accuracy(pred, tar).item(),
+                "val_mse": self.val__mse(segmentation, y).item(),
+                "val_dist_mse": self.val_dist_mse(segmentation[:, :1], y[:, :1]).item(),
+                "val_end_mse": self.val_end_mse(segmentation[:, 1:2], y[:, 1:2]).item(),
+                "val_dir_mse": self.val_dir_mse(segmentation[:, 2:4], y[:, 2:4]).item(),
             },
             on_step=False,
             on_epoch=True,
