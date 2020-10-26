@@ -27,6 +27,14 @@ data_dict = {
 }
 
 
+def clean__dir(dir):
+    for file in os.scandir(dir):
+        if file.is_dir():
+            clean__dir(file)
+        elif file.is_file():
+            os.remove(file)
+
+
 def find_gpu_configs(opt):
     if opt.gpu is not None:
         if opt.gpu[0] == -1:
@@ -46,6 +54,33 @@ def find_gpu_configs(opt):
     return gpu, backend
 
 
+def trainer_configs(opt, configs):
+    gpu, distributed_backend = find_gpu_configs(opt)
+    if (
+        "accumulate_grad_batches" in configs["train"].keys()
+        and opt.accumulate_grad_batches == 0
+    ):
+        acc = configs["train"]["accumulate_grad_batches"]
+    else:
+        acc = opt.accumulate_grad_batches
+
+    tr_configs = {
+        "gpus": gpu,
+        "distributed_backend": distributed_backend,
+        "accumulate_grad_batches": acc,
+        "max_epochs": configs["train"]["epochs"],
+        "limit_val_batches": configs["train"]["validation-batches"],
+        "val_check_interval": configs["train"]["validation-interval"],
+        "log_every_n_steps": configs["train"]["logger-interval"],
+        "log_gpu_memory": True,
+        "profiler": opt.profiler,
+    }
+    if "trainer_args" in configs["train"].keys():
+        for key, value in configs["train"]["trainer_args"].items():
+            tr_configs[key] = value
+    return tr_configs
+
+
 def train(opt):
     with Path(opt.configs).open("rb") as f:
         configs = yaml.load(f, Loader)
@@ -53,16 +88,11 @@ def train(opt):
     if opt.batch_size != 0:
         configs["train"]["batch-size"] = opt.batch_size
 
-    gpu, dist_backend = find_gpu_configs(opt)
+    trainer_confs = trainer_configs(opt, configs)
 
-    find_lr = False
-    if opt.find_lr:
-        if dist_backend is not None:
-            print(
-                "Learning rate finder is not implemented for distributed environment!"
-            )
-        else:
-            find_lr = True
+    if opt.find_lr and trainer_confs["distributed_backend"] is not None:
+        print("Learning rate finder is not implemented for distributed environment!")
+        opt.find_lr = False
 
     if "input_size" in configs["model"]:
         configs["dataset"]["size"] = configs["model"]["input_size"]
@@ -101,8 +131,9 @@ def train(opt):
         pin_memory=True,
     )
 
+    # FIXME
     checkpoint_callback = ModelCheckpoint(
-        filepath="data/checkpoints/" + opt.tag + "/{epoch}", period=1, verbose=True
+        filepath="data/checkpoints/" + opt.name + "/{epoch}", period=1, verbose=True
     )
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
@@ -124,47 +155,29 @@ def train(opt):
     comet_logger = CometLogger(
         save_dir="data/comet_ml",
         project_name="road-boundary-features",
-        experiment_name=opt.tag,
+        experiment_name=opt.name,
         experiment_key=opt.comet,
     )
 
     if opt.resume_training:
         trainer = pl.Trainer(
-            gpus=gpu,
-            distributed_backend=dist_backend,
-            accumulate_grad_batches=opt.accumulate_grad_batches,
-            max_epochs=configs["train"]["epochs"],
-            limit_val_batches=configs["train"]["validation-batches"],
-            val_check_interval=configs["train"]["validation-interval"],
             logger=[logger, comet_logger],
-            log_every_n_steps=configs["train"]["logger-interval"],
-            log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
             callbacks=[lr_monitor],
-            profiler=opt.profile,
+            **trainer_confs
         )
     else:
         trainer = pl.Trainer(
-            gpus=gpu,
-            distributed_backend=dist_backend,
-            accumulate_grad_batches=opt.accumulate_grad_batches,
-            max_epochs=configs["train"]["epochs"],
-            limit_val_batches=configs["train"]["validation-batches"],
-            val_check_interval=configs["train"]["validation-interval"],
             logger=[logger, comet_logger],
-            log_every_n_steps=configs["train"]["logger-interval"],
-            log_gpu_memory=True,
             checkpoint_callback=checkpoint_callback,
             callbacks=[lr_monitor],
-            profiler=opt.profile,
-            auto_lr_find=find_lr
-            # overfit_batches=100,
+            **trainer_confs
         )
 
     comet_logger.experiment.set_model_graph(str(ModelSummary(model, mode="full")))
 
-    if find_lr:
+    if opt.find_lr:
         lr_finder = trainer.tuner.lr_find(model, train_loader)
         new_lr = lr_finder.suggestion()
         print("using learning rate suggestion %s" % new_lr)
@@ -186,13 +199,19 @@ if __name__ == "__main__":
     parser.add_argument("--gpu", default=None, type=int, nargs="+", help="gpu")
     parser.add_argument("--distributed_backend", default="ddp", help="gpu")
     parser.add_argument(
-        "--accumulate_grad_batches", type=int, default=2, help="accumulate_grad_batches"
+        "--accumulate_grad_batches",
+        type=int,
+        default=0,
+        help="accumulate_grad_batches",
     )
     parser.add_argument(
         "--batch_size", type=int, default=0, help="batch_size. this overrides configs"
     )
     parser.add_argument("--configs", type=str, default="params.yaml", help="")
-    parser.add_argument("--tag", type=str, default="training", help="")
+    parser.add_argument("--name", type=str, default="training", help="")
+    parser.add_argument(
+        "--tags", type=str, nargs="+", default="", help="Tags for comet logger"
+    )
     parser.add_argument("--resume_training", type=bool, default=False, help="")
     parser.add_argument("--checkpoint", type=str, default=None, help="")
     parser.add_argument("--comet", type=str, default=None, help="")
