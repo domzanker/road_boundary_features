@@ -27,10 +27,10 @@ data_dict = {
 }
 
 
-def clean__dir(dir):
+def clean_dir(dir):
     for file in os.scandir(dir):
         if file.is_dir():
-            clean__dir(file)
+            clean_dir(file)
         elif file.is_file():
             os.remove(file)
 
@@ -132,12 +132,12 @@ def train(opt):
     )
 
     # FIXME
-    checkpoint_callback = ModelCheckpoint(
-        filepath="data/checkpoints/" + opt.name + "/{epoch}", period=1, verbose=True
-    )
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
     if opt.checkpoint is not None:
+        checkpoint_callback = ModelCheckpoint(
+            filepath="data/checkpoints/" + opt.name + "/{epoch}", period=1, verbose=True
+        )
 
         checkpoint_file = opt.checkpoint
 
@@ -146,12 +146,14 @@ def train(opt):
         else:
             model = FeatureNet.load_from_checkpoint(checkpoint_file, strict=False)
     else:
+        clean_dir("data/checkpoints/" + opt.name)
         if opt.autoencoder:
             model = AutoEncoder(configs=configs)
         else:
             model = FeatureNet(configs=configs)
 
     logger = TensorBoardLogger("data/tensorboard", opt.tag)
+    clean_dir("data/comet_ml/")
     comet_logger = CometLogger(
         save_dir="data/comet_ml",
         project_name="road-boundary-features",
