@@ -113,19 +113,22 @@ class FeatureNet(pl.LightningModule):
         }
         self.log_dict(loss_dict)
 
+        prediction = segmentation.detach()
+        targets = y.detach()
         self.log_dict(
             {
-                "train_mse": self.train_mse(segmentation, y).item(),
+                "train_mse": self.train_mse(prediction, targets).item(),
                 "train_dist_mse": self.train_dist_mse(
-                    segmentation[:, :1], y[:, :1]
+                    prediction[:, :1], targets[:, :1]
                 ).item(),
                 "train_end_mse": self.train_end_mse(
-                    segmentation[:, 1:2], y[:, 1:2]
+                    prediction[:, 1:2], targets[:, 1:2]
                 ).item(),
                 "train_dir_mse": self.train_dir_mse(
-                    segmentation[:, 2:4], y[:, 2:4]
+                    prediction[:, 2:4], targets[:, 2:4]
                 ).item(),
-            }
+            },
+            on_step=True,
         )
 
         return losses["total_loss"]
