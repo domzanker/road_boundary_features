@@ -157,6 +157,8 @@ class ConvBlock(nn.Module):
         activation: str = "relu",
         batch_norm: bool = True,
         dropout: float = 0.0,
+        *args,
+        **kwargs
     ):
         super(ConvBlock, self).__init__()
         if batch_norm:
@@ -170,6 +172,8 @@ class ConvBlock(nn.Module):
             kernel_size=kernel_size,
             stride=stride,
             dilation=dilation,
+            *args,
+            **kwargs
         )
         self.activation = activation_func(activation)
         self.dropout = nn.Dropout2d(dropout, inplace=True)
@@ -190,8 +194,9 @@ class ResidualBlock(nn.Module):
         kernel_size: Union[_size_2_t, List[_size_2_t]] = 3,
         stride: Union[_size_2_t, List[_size_2_t]] = 1,
         dilation: Union[_size_2_t, List[_size_2_t]] = 1,
-        activation: str = "sigmoid",
+        activation: str = "relu",
         batch_norm: bool = False,
+        shortcut: str = "projection",
         *args,
         **kwargs
     ):
@@ -235,14 +240,39 @@ class ResidualBlock(nn.Module):
         else:
             self.normalize = nn.Identity()
         self.activate = activation_func(activation)
-        self.shortcut = nn.Identity()
+        if shortcut == "projection":
+            self.shortcut = nn.Sequential(
+                ConvBlock(
+                    in_channels=in_channels[0],
+                    out_channels=in_channels[0],
+                    kernel_size=1,
+                    stride=stride[0],
+                    bias=False,
+                ),
+                ConvBlock(
+                    in_channels=in_channels[0],
+                    out_channels=in_channels[0],
+                    kernel_size=3,
+                    stride=2,
+                    bias=False,
+                ),
+                ConvBlock(
+                    in_channels=in_channels[0],
+                    out_channels=out_channels[-1],
+                    kernel_size=1,
+                    stride=stride[0],
+                    bias=False,
+                ),
+            )
+        else:
+            raise NotImplementedError
 
     def forward(self, x):
 
         residual = x
-        x = self.blocks(x)
-        if self.apply_skip_connection:
+        if not self.apply_skip_connection:
             residual = self.shortcut(x)
+        x = self.blocks(x)
         x += residual
         x = self.normalize(x)
         x = self.activate(x)
