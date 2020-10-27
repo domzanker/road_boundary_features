@@ -249,7 +249,7 @@ class Decoder(Module):
         self,
         decoder_depth: int,
         conv_per_block: int,
-        blocks: Union[List[Dict[str, Any]], Dict[Dict[str, Any]]],
+        blocks: Union[List[Dict[str, Any]], Dict[str, Dict[str, Any]]],
         *args,
         **kwargs,
     ):
