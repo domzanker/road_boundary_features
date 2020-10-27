@@ -6,14 +6,20 @@ encoder_prec:
         out_channels: 64
         stride: 2
         kernel_size: 7
+        dropout: 0.0
         
 
 encoder:
         encoder_depth: 4
         in_channels: [64, 128, 256, 512]
         out_channels: [128, 256, 512, 1024]
+
         kernel_size: 3
+        nmbr_res_blocks: 3
         dilation: 2
+        batch_norm: True
+        activation: "relu"
+        dropout: 0.0
 
 decoder:
         decoder_depth: 4
@@ -27,7 +33,6 @@ decoder:
                         stride: 1,
                         dilation: 1,
                         activation: "relu",
-                        #upsampling: [24, 16],
                         apply_instance_norm: True},
                   
                         {
@@ -37,7 +42,6 @@ decoder:
                         stride: 1,
                         dilation: 1,
                         activation: "relu",
-                        #upsampling: [47, 32],
                         apply_instance_norm: True},
                         {
                         in_channels: [256, 256, 128, 128],
@@ -46,7 +50,6 @@ decoder:
                         stride: 1,
                         dilation: 1,
                         activation: "relu",
-                        #upsampling: [94, 63],
                         apply_instance_norm: True},
                         {
                         in_channels: [128, 128, 64, 64],

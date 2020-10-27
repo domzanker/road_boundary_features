@@ -33,6 +33,8 @@ class SegmentationHead(nn.Module):
         super(SegmentationHead, self).__init__()
 
         self.branches = nn.ModuleList()
+        if isinstance(branches, dict):
+            branches = list(branches.values())
         for branch in branches:
             if isinstance(branch, list):
                 branch = {

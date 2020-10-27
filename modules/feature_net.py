@@ -249,11 +249,13 @@ class Decoder(Module):
         self,
         decoder_depth: int,
         conv_per_block: int,
-        blocks: List[Dict[str, Any]],
+        blocks: Union[List[Dict[str, Any]], Dict[Dict[str, Any]]],
         *args,
         **kwargs,
     ):
         super(Decoder, self).__init__()
+        if isinstance(blocks, dict):
+            blocks = list(blocks.values())
         self.blocks = torch.nn.ModuleList(
             [
                 DecoderBlock(**blocks[c], nmbr_convs=conv_per_block)

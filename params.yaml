@@ -28,7 +28,7 @@ train:
                         args:
                                 reduction: "mean"
                 end_loss: 
-                        loss: "mse"
+                        loss: "bce"
                         factor: 1.0
                         args:
                                 reduction: "mean"
