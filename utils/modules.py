@@ -247,7 +247,7 @@ class ResidualBlock(nn.Module):
                         in_channels=in_channels[0],
                         out_channels=in_channels[0],
                         kernel_size=1,
-                        stride=stride[0],
+                        stride=1,
                         bias=False,
                     ),
                     ConvBlock(
@@ -261,7 +261,7 @@ class ResidualBlock(nn.Module):
                         in_channels=in_channels[0],
                         out_channels=out_channels[-1],
                         kernel_size=1,
-                        stride=stride[0],
+                        stride=1,
                         bias=False,
                     ),
                 )
