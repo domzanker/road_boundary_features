@@ -240,32 +240,35 @@ class ResidualBlock(nn.Module):
         else:
             self.normalize = nn.Identity()
         self.activate = activation_func(activation)
-        if shortcut == "projection":
-            self.shortcut = nn.Sequential(
-                ConvBlock(
-                    in_channels=in_channels[0],
-                    out_channels=in_channels[0],
-                    kernel_size=1,
-                    stride=stride[0],
-                    bias=False,
-                ),
-                ConvBlock(
-                    in_channels=in_channels[0],
-                    out_channels=in_channels[0],
-                    kernel_size=3,
-                    stride=2,
-                    bias=False,
-                ),
-                ConvBlock(
-                    in_channels=in_channels[0],
-                    out_channels=out_channels[-1],
-                    kernel_size=1,
-                    stride=stride[0],
-                    bias=False,
-                ),
-            )
+        if self.apply_skip_connection:
+            if shortcut == "projection":
+                self.shortcut = nn.Sequential(
+                    ConvBlock(
+                        in_channels=in_channels[0],
+                        out_channels=in_channels[0],
+                        kernel_size=1,
+                        stride=stride[0],
+                        bias=False,
+                    ),
+                    ConvBlock(
+                        in_channels=in_channels[0],
+                        out_channels=in_channels[0],
+                        kernel_size=3,
+                        stride=2,
+                        bias=False,
+                    ),
+                    ConvBlock(
+                        in_channels=in_channels[0],
+                        out_channels=out_channels[-1],
+                        kernel_size=1,
+                        stride=stride[0],
+                        bias=False,
+                    ),
+                )
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            self.shortcut = None
 
     def forward(self, x):
 
