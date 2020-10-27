@@ -240,7 +240,7 @@ class ResidualBlock(nn.Module):
         else:
             self.normalize = nn.Identity()
         self.activate = activation_func(activation)
-        if self.apply_skip_connection:
+        if stride[0] != 1 or in_channels[0] != out_channels[-1]:
             if shortcut == "projection":
                 self.shortcut = nn.Sequential(
                     ConvBlock(
@@ -283,7 +283,8 @@ class ResidualBlock(nn.Module):
 
     @property
     def apply_skip_connection(self):
-        return self.in_channels != self.out_channels
+        return self.shortcut is not None
+        # return self.in_channels != self.out_channels
 
 
 class Conv2dAuto(nn.Conv2d):
