@@ -36,9 +36,9 @@ class FeatureNet(pl.LightningModule):
             self.encoder_prec = Sequential(
                 ConvBlock(
                     in_channels=self.model_configs["input_channels"],
-                    **self.model_configs["encoder_prec"],
+                    **self.model_configs["encoder_prec"]["conv"],
                 ),
-                torch.nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+                torch.nn.MaxPool2d(**self.model_configs["encoder_prec"]["pool"]),
             )
             self.encoder = Encoder(**self.model_configs["encoder"])
             self.decoder = Decoder(**self.model_configs["decoder"])
@@ -374,16 +374,26 @@ class Encoder(Module):
             out_channels = in_channels[1:]
             out_channels.append(in_channels[-1] * 2)
 
-        self.blocks = torch.nn.ModuleList(
-            [
-                EncoderBlock(
-                    in_channels=in_channels[i],
-                    out_channels=out_channels[i],
-                    **kwargs,
-                )
-                for i in range(encoder_depth)
-            ]
-        )
+        if "blocks" in kwargs.keys():
+            self.blocks = torch.nn.ModuleList(
+                [
+                    EncoderBlock(
+                        **blocks,
+                    )
+                    for key, blocks in kwargs["blocks"].items()
+                ]
+            )
+        else:
+            self.blocks = torch.nn.ModuleList(
+                [
+                    EncoderBlock(
+                        in_channels=in_channels[i],
+                        out_channels=out_channels[i],
+                        **kwargs,
+                    )
+                    for i in range(encoder_depth)
+                ]
+            )
 
     def forward(self, x):
         out = []
@@ -405,6 +415,7 @@ class EncoderBlock(Module):
         nmbr_res_blocks: int = 2,
         kernel_size: Union[_size_2_t, List[_size_2_t]] = 3,
         dilation: Union[_size_2_t, List[_size_2_t]] = 1,
+        downsample_factor: int = 2,
         *args,
         **kwargs,
     ):
@@ -420,7 +431,7 @@ class EncoderBlock(Module):
         self.head_block = ResidualBlock(
             in_channels=in_channels,
             out_channels=out_channels,
-            stride=[2, 1, 1],
+            stride=[downsample_factor, 1, 1],
             kernel_size=kernel_size[0],
             dilation=dilation[0],
             *args,
