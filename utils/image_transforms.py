@@ -31,6 +31,7 @@ def to_tensorboard(img: torch.Tensor):
 def apply_colormap(img, colormap=cv2.COLORMAP_TURBO):
     img = img.numpy()
     img = img * 255
+    img[img > 255] = 255
     if img.ndim == 4:
         img = np.transpose(img, (0, 2, 3, 1)).astype("uint8")
         batch = [
