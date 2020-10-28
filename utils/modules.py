@@ -245,24 +245,11 @@ class ResidualBlock(nn.Module):
                 self.shortcut = nn.Sequential(
                     ConvBlock(
                         in_channels=in_channels[0],
-                        out_channels=in_channels[0],
-                        kernel_size=1,
-                        stride=1,
-                        bias=False,
-                    ),
-                    ConvBlock(
-                        in_channels=in_channels[0],
-                        out_channels=in_channels[0],
-                        kernel_size=3,
-                        stride=stride[0],
-                        bias=False,
-                    ),
-                    ConvBlock(
-                        in_channels=in_channels[0],
                         out_channels=out_channels[-1],
                         kernel_size=1,
-                        stride=1,
+                        stride=stride[0],
                         bias=False,
+                        batch_norm=True,
                     ),
                 )
             else:
