@@ -69,10 +69,12 @@ class FeatureNet(pl.LightningModule):
         """
         self.loss = MultiFeaturesLoss(**self.train_configs["losses"])
 
+        """
         self.train_mse = pl.metrics.MeanSquaredError()
         self.train_dist_mse = pl.metrics.MeanSquaredError()
         self.train_end_mse = pl.metrics.MeanSquaredError()
         self.train_dir_mse = pl.metrics.MeanSquaredError()
+        """
 
         self.val_dir_mse = pl.metrics.MeanSquaredError()
         self.val_dist_mse = pl.metrics.MeanSquaredError()
@@ -113,6 +115,7 @@ class FeatureNet(pl.LightningModule):
         }
         self.log_dict(loss_dict)
 
+        """
         prediction = segmentation.detach()
         targets = y.detach()
         self.log_dict(
@@ -130,6 +133,7 @@ class FeatureNet(pl.LightningModule):
             },
             on_step=True,
         )
+        """
 
         return losses["total_loss"]
 
