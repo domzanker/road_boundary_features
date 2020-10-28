@@ -51,25 +51,25 @@ head:
                 distance_branch:
                         in_channels: [64, 32, 16]
                         out_channels: [32, 16, 1]
-                        kernel_sizes: [3, 3, 3, 1]
+                        kernel_sizes: [3, 3, 1]
                         strides: 1
                         dilation: 1
                         batch_norm: True
-                        end_activation: "sigmoid"
+                        end_activation: "relu"
                         dropout: 0.0
                 end_point_branch:
                         in_channels: [64, 32, 16]
                         out_channels: [32, 16, 1]
-                        kernel_sizes: [3, 3, 3, 1]
+                        kernel_sizes: [3, 3, 1]
                         strides: 1
                         dilation: 1
                         batch_norm: True
-                        end_activation: "sigmoid"
+                        end_activation: "relu"
                         dropout: 0.0
                 direction_branch:
                         in_channels: [64, 32, 16]
                         out_channels: [32, 16, 2]
-                        kernel_sizes: [3, 3, 3, 1]
+                        kernel_sizes: [3, 3, 1]
                         strides: 1
                         dilation: 1
                         batch_norm: True
