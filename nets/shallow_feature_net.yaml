@@ -3,16 +3,24 @@ use_custom: True
 input_size: [768, 448] # for 4 layer resnet: /112
 input_channels: 4
 encoder_prec:
-        out_channels: 64
-        stride: 2
-        kernel_size: 7
-        dropout: 0.0
-        
+        conv:
+                out_channels: 64
+                stride: 1
+                dilation: 2
+                kernel_size: 7
+                dropout: 0.0
+        pool:
+                kernel_size: 3
+                stride: 2
+                padding: 1
 
 encoder:
         encoder_depth: 2
+        
         in_channels: [64, 128]
         out_channels: [128, 256]
+
+        # configs for encoder blocks
 
         kernel_size: 3
         nmbr_res_blocks: 3
