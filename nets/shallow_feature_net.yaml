@@ -49,7 +49,7 @@ head:
         branches:
 
                 distance_branch:
-                        in_channels: [64, 32, 8]
+                        in_channels: [64, 32, 16]
                         out_channels: [32, 16, 1]
                         kernel_sizes: [3, 3, 3, 1]
                         strides: 1
@@ -58,7 +58,7 @@ head:
                         end_activation: "sigmoid"
                         dropout: 0.0
                 end_point_branch:
-                        in_channels: [64, 32, 8]
+                        in_channels: [64, 32, 16]
                         out_channels: [32, 16, 1]
                         kernel_sizes: [3, 3, 3, 1]
                         strides: 1
@@ -67,7 +67,7 @@ head:
                         end_activation: "sigmoid"
                         dropout: 0.0
                 direction_branch:
-                        in_channels: [64, 32, 8]
+                        in_channels: [64, 32, 16]
                         out_channels: [32, 16, 2]
                         kernel_sizes: [3, 3, 3, 1]
                         strides: 1
