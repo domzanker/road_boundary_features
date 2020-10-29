@@ -1,0 +1,53 @@
+train:
+  cmd: ionice -c3 python train.py --name shallow_feature_net --configs params.yaml
+    --gpu 0 1
+  deps:
+  - path: modules/feature_net.py
+    md5: b873e31a00e50c951022661b34db1c4d
+  - path: nets/
+    md5: 26d6d755a23e33aa2a095df62cbb9757.dir
+  - path: train.py
+    md5: dfd813a16160f3d479633ef8140195af
+  - path: utils/modules.py
+    md5: a237a97dbb23ab74b754ea192e301a1b
+  params:
+    params.yaml:
+      model: nets/shallow_feature_net.yaml
+      train:
+        gpus: 0
+        distributed_backend:
+        log_gpu_memory: true
+        profiler: false
+        learning-rate: 0.003
+        lr-decay: 0.1
+        lr_decay_step_size: 1
+        weight_decay: 0.1
+        batch-size: 6
+        accumulate_grad_batches: 5
+        losses:
+          distance_loss:
+            loss: mse
+            factor: 1.0
+            args:
+              reduction: mean
+          end_loss:
+            loss: bce
+            factor: 1.0
+            args:
+              reduction: mean
+          direction_loss:
+            loss: cosine_similarity
+            factor: 1.0
+            args:
+              reduction: mean
+        epochs: 100
+        validation-interval: 0.25
+        validation-batches: 50
+        logger-interval: 100
+        nmbr-logged-images: 9
+        checkpoint-interval: 1
+  outs:
+  - path: data/checkpoints
+    md5: 798ddb2ce98e7874b8fcf1e6a3d25cb5.dir
+  - path: data/comet_ml
+    md5: 01ee1321265d4a7c35e557af3048f9e5.dir
