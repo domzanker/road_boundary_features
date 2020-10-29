@@ -1,0 +1,15 @@
+stages:
+  train:
+    cmd: ionice -c3 python train.py --name shallow_feature_net --configs params.yaml
+      --gpu 0 1
+    deps:
+    - modules/feature_net.py
+    - nets/
+    - train.py
+    - utils/modules.py
+    params:
+    - model
+    - train
+    outs:
+    - data/checkpoints
+    - data/comet_ml
