@@ -29,12 +29,12 @@ train:
                                 reduction: "mean"
                 end_loss: 
                         loss: "bce"
-                        factor: 0.0
+                        factor: 1.0
                         args:
                                 reduction: "mean"
                 direction_loss: 
                         loss: "cosine_similarity"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
 
