@@ -6,6 +6,7 @@ dataset:
         train-dataset: "data/nuscenes-complete-15x10/train"
         valid-dataset: "data/nuscenes-complete-15x10/valid"
         test-dataset: "data/nuscenes-complete-15x10/test"
+        angle_bins: 4
 
 train:
         gpus: 0
