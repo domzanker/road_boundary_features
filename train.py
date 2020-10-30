@@ -108,10 +108,16 @@ def train(opt):
 
     dataset = data_dict[configs["dataset"]["name"]]
 
+    if "angle_bins" in configs["dataset"].keys():
+        angle_bins = configs["dataset"]["angle_bins"]
+    else:
+        angle_bins = None
+
     train_dataset = dataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
         transform=preprocessing_params,
+        angle_bins=angle_bins,
     )
     train_loader = DataLoader(
         train_dataset,
@@ -125,6 +131,7 @@ def train(opt):
         path=Path(configs["dataset"]["valid-dataset"]),
         image_size=configs["dataset"]["size"],
         transform=preprocessing_params,
+        angle_bins=angle_bins,
     )
     val_loader = DataLoader(
         val_dataset,

@@ -19,7 +19,8 @@ class RoadBoundaryDataset(Dataset):
         transform=None,
         *,
         suffix: str = ".h5",
-        image_size: Optional[Tuple[int, int]] = None
+        image_size: Optional[Tuple[int, int]] = None,
+        angle_bins: int = None
     ):
         path = Path(path)
 
@@ -37,6 +38,8 @@ class RoadBoundaryDataset(Dataset):
             self.transform_params = None
 
         self.image_size = image_size
+
+        self.angle_bins = angle_bins
         super().__init__()
 
     def __len__(self):
@@ -89,6 +92,9 @@ class RoadBoundaryDataset(Dataset):
         assert road_direction_map.shape[0] == 2
         assert inverse_distance_map.shape[0] == 1
 
+        if self.angle_bins is not None:
+            road_direction_map = self._angle_bins(road_direction_map, self.angle_bins)
+
         # convert to torch tensors with CHW
         targets_torch = torch.cat(
             [
@@ -120,6 +126,22 @@ class RoadBoundaryDataset(Dataset):
             """
 
         return (image_torch, targets_torch)
+
+    def _angle_bins(self, vector_field, bins: int = 4):
+        assert vector_field.shape[0] == 2
+        angle_map = torch.atan2(vector_field[0], vector_field[1])
+        # angle range rad -pi, pi
+        bin_size = 2 * np.pi / bins
+        for i in range(bins):
+            lower_bin = -np.pi + i * bin_size
+            upper_bin = -np.pi + (i + 1) * bin_size
+            # set angle to bin angle
+            angle_map[
+                torch.logical_and(angle_map >= lower_bin, angle_map < upper_bin)
+            ] = lower_bin
+        vector_field[0] = torch.cos(angle_map)
+        vector_field[1] = torch.sin(angle_map)
+        return vector_field
 
 
 class ImageDataset(RoadBoundaryDataset):
