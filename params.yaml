@@ -3,9 +3,9 @@ dataset:
         #size: [640, 360]
         #size: [1280, 720]
         size: null
-        train-dataset: "data/lyft-lvl5-15x10/train"
-        valid-dataset: "data/lyft-lvl5-15x10/valid"
-        test-dataset: "data/lyft-lvl5-15x10/test"
+        train-dataset: "data/nuscenes-complete-15x10/train"
+        valid-dataset: "data/nuscenes-complete-15x10/valid"
+        test-dataset: "data/nuscenes-complete-15x10/test"
 
 train:
         gpus: 0
@@ -24,12 +24,12 @@ train:
         losses: 
                 distance_loss: 
                         loss: "mse"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
                 end_loss: 
                         loss: "bce"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
                 direction_loss: 

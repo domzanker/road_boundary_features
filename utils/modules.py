@@ -14,6 +14,7 @@ def activation_func(activation: str):
             "lrelu": torch.nn.LeakyReLU(),
             "none": torch.nn.Identity(),
             "tanh": torch.nn.Tanh(),
+            "hardtanh": torch.nn.Hardtanh(),
         }
     )[activation]
 
@@ -108,6 +109,7 @@ class SegmentationBranch(nn.Module):
         batch_norm: bool = True,
         upsample_mode: str = "nearest",
         scale_factor: float = 2.0,
+        activation: str = "relu",
     ):
         super(SegmentationBranch, self).__init__()
         if not isinstance(kernel_sizes, list):
@@ -117,7 +119,7 @@ class SegmentationBranch(nn.Module):
         if not isinstance(dilation, list):
             dilation = [dilation for _ in range(depth)]
 
-        activations = ["relu" for _ in range(depth)]
+        activations = [activation for _ in range(depth)]
         activations[-1] = end_activation
 
         # TODO get out_channels

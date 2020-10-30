@@ -81,5 +81,5 @@ head:
                         strides: 1
                         dilation: 1
                         batch_norm: True
-                        end_activation: "tanh"
+                        end_activation: "hardtanh"
                         dropout: 0.0
