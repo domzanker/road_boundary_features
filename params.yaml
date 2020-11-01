@@ -17,7 +17,7 @@ train:
         learning-rate: 0.03
         lr-decay: 0.1
         lr_decay_step_size: 2
-        weight_decay: 1e-4
+        weight_decay: 1e-1
 
         batch-size: 6
         accumulate_grad_batches: 5

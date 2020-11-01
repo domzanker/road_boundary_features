@@ -233,7 +233,11 @@ class FeatureNet(pl.LightningModule):
         )
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=self.learning_rate,
+            weight_decay=self.train_configs["weight_decay"],
+        )
         lr_scheduler = {
             "scheduler": ReduceLROnPlateau(
                 optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=1
