@@ -6,7 +6,7 @@ dataset:
         train-dataset: "data/lyft-lvl5-15x10/train"
         valid-dataset: "data/lyft-lvl5-15x10/valid"
         test-dataset: "data/lyft-lvl5-15x10/test"
-        angle_bins: 2
+        angle_bins: null
 
 train:
         gpus: 0
@@ -30,12 +30,12 @@ train:
                                 reduction: "mean"
                 end_loss: 
                         loss: "bce"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
                 direction_loss: 
                         loss: "cosine_similarity"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
 
