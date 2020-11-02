@@ -14,7 +14,7 @@ train:
         log_gpu_memory: True
         profiler: False
 
-        learning-rate: 0.0005
+        learning-rate: 0.0003
         lr-decay: 0.1
         lr_decay_step_size: 2
         weight_decay: 0.0001 
