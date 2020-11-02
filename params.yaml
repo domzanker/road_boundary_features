@@ -3,8 +3,8 @@ dataset:
         #size: [640, 360]
         #size: [1280, 720]
         size: null
-        train-dataset: "data/nuscenes-complete-15x10/train"
-        valid-dataset: "data/nuscenes-complete-15x10/valid"
+        train-dataset: "data/lyft-lvl5-15x10/train"
+        valid-dataset: "data/lyft-lvl5-15x10/valid"
         test-dataset: "data/lyft-lvl5-15x10/test"
         angle_bins: null
 
@@ -14,10 +14,10 @@ train:
         log_gpu_memory: True
         profiler: False
 
-        learning-rate: 0.003
+        learning-rate: 0.03
         lr-decay: 0.1
         lr_decay_step_size: 2
-        weight_decay: 0.0001 
+        weight_decay: 0.01 
 
         batch-size: 6
         accumulate_grad_batches: 5
