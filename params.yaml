@@ -40,7 +40,7 @@ train:
                                 reduction: "mean"
 
         epochs: 100
-        validation-interval: 0.25
+        validation-interval: 0.5
         validation-batches: 50
 
         logger-interval: 100
