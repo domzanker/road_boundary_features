@@ -8,8 +8,10 @@ from torch.utils.data.dataloader import DataLoader
 
 from utils.dataset import RoadBoundaryDataset, ImageDataset
 from utils.yaml import Loader
+from utils.progbar import ProgBar
 from modules.feature_net import FeatureNet
 from modules.autoencoder import AutoEncoder
+
 
 from pytorch_lightning.loggers import TensorBoardLogger, CometLogger
 from pytorch_lightning.callbacks import (
@@ -175,19 +177,21 @@ def train(opt):
     comet_logger.experiment.add_tag(opt.name)
     comet_logger.experiment.add_tags(opt.tags)
 
+    proc_bar = ProgBar()
+
     if opt.resume_training:
         trainer = pl.Trainer(
             logger=[logger, comet_logger],
             checkpoint_callback=checkpoint_callback,
             resume_from_checkpoint=checkpoint_file,
-            callbacks=[lr_monitor],
+            callbacks=[proc_bar, lr_monitor],
             **trainer_confs
         )
     else:
         trainer = pl.Trainer(
             logger=[logger, comet_logger],
             checkpoint_callback=checkpoint_callback,
-            callbacks=[lr_monitor],
+            callbacks=[proc_bar, lr_monitor],
             **trainer_confs
         )
 
