@@ -12,7 +12,7 @@ def angle_map(vector_map):
     angles_ = np.transpose(angles_, (0, 2, 3, 1))
     batch = [
         cv2.cvtColor(
-            cv2.applyColorMap(angles_[i, :, :, :], cv2.COLORMAP_TURBO),
+            cv2.applyColorMap(angles_[i, :, :, :], cv2.COLORMAP_HSV),
             cv2.COLOR_BGR2RGB,
         )
         for i in range(angles_.shape[0])
