@@ -25,7 +25,7 @@ train:
         losses: 
                 distance_loss: 
                         loss: "mse"
-                        factor: 1.0
+                        factor: 0.0
                         args:
                                 reduction: "mean"
                 end_loss: 
@@ -35,7 +35,7 @@ train:
                                 reduction: "mean"
                 direction_loss: 
                         loss: "cosine_similarity"
-                        factor: 0.0
+                        factor: 1.0
                         args:
                                 reduction: "mean"
 
