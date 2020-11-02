@@ -149,10 +149,9 @@ class FeatureNet(pl.LightningModule):
             "val_direction_loss": losses["direction_loss"].detach(),
         }
         self.log_dict(loss_dict)
-
+        self.log("val_loss", losses["total_loss"].item(), prog_bar=True, logger=True)
         self.log_dict(
             {
-                "val_loss": losses["total_loss"].item(),
                 "val_mse": self.val__mse(segmentation, y).item(),
                 "val_dist_mse": self.val_dist_mse(segmentation[:, :1], y[:, :1]).item(),
                 "val_end_mse": self.val_end_mse(segmentation[:, 1:2], y[:, 1:2]).item(),
