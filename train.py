@@ -210,7 +210,7 @@ def train(opt):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--cpu_workers", type=int, default=8, help="number of cpu threads for loading"
+        "--cpu_workers", type=int, default=10, help="number of cpu threads for loading"
     )
     parser.add_argument("--gpu", default=None, type=int, nargs="+", help="gpu")
     parser.add_argument("--distributed_backend", default="ddp", help="gpu")
