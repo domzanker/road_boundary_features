@@ -95,6 +95,9 @@ class FeatureNet(pl.LightningModule):
         x = self.head(x)
         return x
 
+    def on_epoch_start(self):
+        self.log("lr", self.learning_rate)
+
     def training_step(self, batch, batch_idx):
         x, y = batch
 
@@ -246,6 +249,10 @@ class FeatureNet(pl.LightningModule):
             "name": "plateau_scheduler",
         }
         return [optimizer], [lr_scheduler]
+
+    def get_progress_bar_dict(self):
+        items = super().get_progress_bar_dict()
+        return items
 
 
 class Decoder(Module):
