@@ -44,8 +44,10 @@ class RoadBoundaryDataset(Dataset):
 
         if augmentation is not None:
             self.augmentation = vision_transforms.Compose(
-                vision_transforms.RandomHorizontalFlip(p=augmentation),
-                vision_transforms.RandomVerticalFlip(p=augmentation),
+                [
+                    vision_transforms.RandomHorizontalFlip(p=augmentation),
+                    vision_transforms.RandomVerticalFlip(p=augmentation),
+                ]
             )
         else:
             self.augmentation = None
