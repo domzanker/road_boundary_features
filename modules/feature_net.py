@@ -34,6 +34,7 @@ class FeatureNet(pl.LightningModule):
         if self.model_configs["use_custom"]:
 
             self.encoder_prec = Sequential(
+                torch.nn.BatchNorm2d(4),
                 ConvBlock(
                     in_channels=self.model_configs["input_channels"],
                     **self.model_configs["encoder_prec"]["conv"],
