@@ -146,7 +146,7 @@ def train(opt):
     checkpoint_callback = ModelCheckpoint(
         filepath="data/checkpoints/" + opt.name + "-{epoch}-{val_loss:.3f}",
         period=1,
-        save_top_k=5,
+        save_top_k=1,
     )
     if opt.checkpoint is not None:
 
