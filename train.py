@@ -112,12 +112,17 @@ def train(opt):
         angle_bins = configs["dataset"]["angle_bins"]
     else:
         angle_bins = None
+    if "augmentation" in configs["dataset"].keys():
+        augmentation = configs["dataset"]["augmentation"]
+    else:
+        augmentation = None
 
     train_dataset = dataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
         transform=preprocessing_params,
         angle_bins=angle_bins,
+        augmentation=augmentation,
     )
     train_loader = DataLoader(
         train_dataset,

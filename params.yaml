@@ -7,6 +7,7 @@ dataset:
         valid-dataset: "data/lyft-lvl5-15x10/valid"
         test-dataset: "data/lyft-lvl5-15x10/test"
         angle_bins: null
+        augmentation: 0.2
 
 train:
         gpus: 0

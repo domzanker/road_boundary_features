@@ -20,7 +20,8 @@ class RoadBoundaryDataset(Dataset):
         *,
         suffix: str = ".h5",
         image_size: Optional[Tuple[int, int]] = None,
-        angle_bins: int = None
+        angle_bins: int = None,
+        augmentation: float = None
     ):
         path = Path(path)
 
@@ -40,6 +41,15 @@ class RoadBoundaryDataset(Dataset):
         self.image_size = image_size
 
         self.angle_bins = angle_bins
+
+        if augmentation is not None:
+            self.augmentation = vision_transforms.Compose(
+                vision_transforms.RandomHorizontalFlip(p=augmentation),
+                vision_transforms.RandomVerticalFlip(p=augmentation),
+            )
+        else:
+            self.augmentation = None
+
         super().__init__()
 
     def __len__(self):
@@ -124,6 +134,10 @@ class RoadBoundaryDataset(Dataset):
                 image_torch[:3, :, :], mean=[0.0, 0.0, 0.0], std=[1, 1, 1]
             )
             """
+        if self.augmentation is not None:
+            augmented = self.augmentation(torch.stack([image_torch, targets_torch]))
+            image_torch = augmented[0]
+            targets_torch = augmented[1]
 
         return (image_torch, targets_torch)
 
