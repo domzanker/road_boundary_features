@@ -183,7 +183,7 @@ def train(opt):
     checkpoint_callback = ModelCheckpoint(
         filepath=configs["train"]["checkpoint_path"] + opt.name + "-{epoch}-{step}",
         period=1,
-        save_top_k=1,
+        save_top_k=5,
         monitor="val_loss",
     )
 
