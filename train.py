@@ -149,9 +149,9 @@ def train(opt):
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
     checkpoint_callback = ModelCheckpoint(
-        filepath="data/checkpoints/" + opt.name + "-{epoch}-{val_loss:.3f}",
+        filepath="data/checkpoints/" + opt.name,
         period=1,
-        save_top_k=5,
+        save_top_k=1,
         monitor="val_loss",
     )
     if opt.checkpoint is not None:
