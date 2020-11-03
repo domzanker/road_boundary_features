@@ -27,6 +27,38 @@ data_dict = {
 }
 
 
+def get_best_checkpoint(path) -> Path:
+    # return best checkpoint file in dir
+    path = Path(path)
+    if path.is_file():
+        return path
+    if path.is_dir():
+        file_list = []
+        for file in path.iterdir():
+            if file.suffix == ".ckpt":
+                file_list.append(file)
+
+        if len(file_list) == 0:
+            return None
+        elif len(file_list) == 1:
+            return file_list[0]
+        else:
+            # list all available inputs
+            print("More than one available checkpoint. Please select")
+            str = ["[%s] %s" % (i, p) for i, p in enumerate(file_list)]
+            str.append(
+                'Select file [%s,..,%s] or "q" to abort: ' % (0, len(file_list) - 1)
+            )
+            selected = input("\n".join(str))
+            if selected == "q":
+                return None
+            else:
+                try:
+                    return file_list[int(selected)]
+                except ValueError:
+                    return None
+
+
 def clean_dir(dir):
     for file in os.scandir(dir):
         if file.is_dir():
@@ -149,21 +181,33 @@ def train(opt):
     # gpustats = GPUStatsMonitor(temperature=True)
     lr_monitor = LearningRateMonitor()
     checkpoint_callback = ModelCheckpoint(
-        filepath="data/checkpoints/" + opt.name,
+        filepath=configs["train"]["checkpoint_path"] + opt.name + "-{epoch}-{step}",
         period=1,
         save_top_k=1,
         monitor="val_loss",
     )
-    if opt.checkpoint is not None:
 
-        checkpoint_file = opt.checkpoint
+    checkpoint_file = get_best_checkpoint(configs["train"]["checkpoint_path"])
+    if checkpoint_file is None:
+        print("No checkpoint file. Starting training from scratch")
+        configs["train"]["load_weights"] = False
+        configs["train"]["resume_training"] = False
+    else:
+        checkpoint_file = str(checkpoint_file)
+
+    if configs["train"]["load_weights"]:
 
         if opt.autoencoder:
-            model = AutoEncoder.load_from_checkpoint(checkpoint_file, strict=False)
+            model = AutoEncoder.load_from_checkpoint(
+                checkpoint_file, strict=False, configs=configs
+            )
         else:
-            model = FeatureNet.load_from_checkpoint(checkpoint_file, strict=False)
+            model = FeatureNet.load_from_checkpoint(
+                checkpoint_file, strict=False, configs=configs
+            )
+            print("Loaded model from checkpoint ", checkpoint_file)
     else:
-        # clean_dir("data/checkpoints/" + opt.name)
+        # clean_dir("data/checkpoints/" + opt, strict=False.name)
         if opt.autoencoder:
             model = AutoEncoder(configs=configs)
         else:
@@ -180,7 +224,7 @@ def train(opt):
     comet_logger.experiment.add_tag(opt.name)
     comet_logger.experiment.add_tags(opt.tags)
 
-    if opt.resume_training:
+    if configs["train"]["resume_training"]:
         trainer = pl.Trainer(
             logger=[logger, comet_logger],
             checkpoint_callback=checkpoint_callback,
@@ -188,6 +232,7 @@ def train(opt):
             callbacks=[lr_monitor],
             **trainer_confs
         )
+        print("Resume training from checkpoint ", checkpoint_file)
     else:
         trainer = pl.Trainer(
             logger=[logger, comet_logger],
@@ -233,8 +278,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tags", type=str, nargs="+", default="", help="Tags for comet logger"
     )
-    parser.add_argument("--resume_training", type=bool, default=False, help="")
-    parser.add_argument("--checkpoint", type=str, default=None, help="")
     parser.add_argument("--comet", type=str, default=None, help="")
 
     parser.add_argument("--use_encoder", action="store_true", default=False, help="")
