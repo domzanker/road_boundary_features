@@ -2,6 +2,7 @@ from torch.nn import ModuleDict, ModuleList, Module
 from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss, CosineSimilarity
 import torch.nn
 from typing import Optional, Callable, Union, List, Dict
+from math import pi
 
 
 def loss_func(loss: str, reduction: str = "mean", **kwargs):
@@ -19,12 +20,13 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
 class CosineSimilarityLoss(Module):
     def __init__(self, reduction, *args, **kwargs):
         super(CosineSimilarityLoss, self).__init__()
-        self.cosine_similarity = CosineSimilarity()
+        self.cosine_similarity = CosineSimilarity(dim=1)
         self.reduction = reduction
 
     def forward(self, x, y):
 
-        dist = 1 - torch.abs(self.cosine_similarity(x, y))
+        angular_distance = torch.acos(self.cosine_similarity(x, y)) / pi
+        dist = 1 - angular_distance
         if self.reduction == "none":
             return dist
         elif self.reduction == "sum":
