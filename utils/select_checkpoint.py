@@ -42,4 +42,4 @@ if __name__ == "__main__":
     best_checkpoint = get_best_checkpoint(configs["train"]["checkpoint_path"])
 
     with open("data/best_checkpoint", "w+") as f:
-        yaml.dump({"best_checkpoint": best_checkpoint}, f)
+        yaml.dump({"best_checkpoint": str(best_checkpoint)}, f)
