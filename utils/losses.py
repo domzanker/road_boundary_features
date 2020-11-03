@@ -26,8 +26,9 @@ class CosineSimilarityLoss(Module):
 
     def forward(self, x, y):
 
-        angular_distance = torch.acos(self.cosine_similarity(x, y)) / self.pi
-        dist = 1 - angular_distance
+        # angular_distance = torch.acos(self.cosine_similarity(x, y)) / self.pi
+        # dist = 1 - angular_distance
+        dist = 1 - self.cosine_similarity(x, y)
         if self.reduction == "none":
             return dist
         elif self.reduction == "sum":
