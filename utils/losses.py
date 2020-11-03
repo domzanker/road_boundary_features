@@ -22,10 +22,11 @@ class CosineSimilarityLoss(Module):
         super(CosineSimilarityLoss, self).__init__()
         self.cosine_similarity = CosineSimilarity(dim=1)
         self.reduction = reduction
+        self.pi = torch.acos(torch.zeros(1)).item() * 2
 
     def forward(self, x, y):
 
-        angular_distance = torch.acos(self.cosine_similarity(x, y)) / pi
+        angular_distance = torch.acos(self.cosine_similarity(x, y)) / self.pi
         dist = 1 - angular_distance
         if self.reduction == "none":
             return dist
