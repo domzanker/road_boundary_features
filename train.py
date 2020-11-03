@@ -194,6 +194,7 @@ def train(opt):
         configs["train"]["resume_training"] = False
     else:
         checkpoint_file = str(checkpoint_file)
+        configs["train"]["checkpoint_path"] = checkpoint_file
 
     if configs["train"]["load_weights"]:
 
