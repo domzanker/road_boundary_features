@@ -1,16 +1,26 @@
 stages:
+  checkpoint:
+    cmd: python utils/select_checkpoint.py
+    deps:
+    - modules/
+    - nets/
+    - params.yaml
+    - utils/
+    outs:
+    - data/best_checkpoint
   train:
     cmd: ionice -c3 python train.py --name shallow_feature_net --configs params.yaml
       --gpu 0 1
     deps:
-    - modules/feature_net.py
-    - nets/
+    - data/best_checkpoint
+    - modules/
+    - nets
     - train.py
-    - utils/modules.py
+    - utils
     params:
     - model
     - train
-    outs_persists:
-    - data/checkpoints
     outs:
+    - data/checkpoints:
+        persist: true
     - data/comet_ml

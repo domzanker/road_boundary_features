@@ -7,7 +7,6 @@ from pathlib import Path
 from torch.utils.data.dataloader import DataLoader
 
 from utils.dataset import RoadBoundaryDataset, ImageDataset
-from utils.yaml import Loader
 from modules.feature_net import FeatureNet
 from modules.autoencoder import AutoEncoder
 
@@ -25,38 +24,6 @@ data_dict = {
     "road_boundary_dataset": RoadBoundaryDataset,
     "image_dataset": ImageDataset,
 }
-
-
-def get_best_checkpoint(path) -> Path:
-    # return best checkpoint file in dir
-    path = Path(path)
-    if path.is_file():
-        return path
-    if path.is_dir():
-        file_list = []
-        for file in path.iterdir():
-            if file.suffix == ".ckpt":
-                file_list.append(file)
-
-        if len(file_list) == 0:
-            return None
-        elif len(file_list) == 1:
-            return file_list[0]
-        else:
-            # list all available inputs
-            print("More than one available checkpoint. Please select")
-            str = ["[%s] %s" % (i, p) for i, p in enumerate(file_list)]
-            str.append(
-                'Select file [%s,..,%s] or "q" to abort: ' % (0, len(file_list) - 1)
-            )
-            selected = input("\n".join(str))
-            if selected == "q":
-                return None
-            else:
-                try:
-                    return file_list[int(selected)]
-                except ValueError:
-                    return None
 
 
 def clean_dir(dir):
@@ -187,7 +154,14 @@ def train(opt):
         monitor="val_loss",
     )
 
-    checkpoint_file = get_best_checkpoint(configs["train"]["checkpoint_path"])
+    best_checkpoint = Path("data/best_checkpoint")
+    if best_checkpoint.is_file():
+        with best_checkpoint.open("r") as f:
+            checkpoint_file = yaml.safe_load(f)
+            checkpoint_file = checkpoint_file["best_checkpoint"]
+    else:
+        checkpoint_file = None
+
     if checkpoint_file is None:
         print("No checkpoint file. Starting training from scratch")
         configs["train"]["load_weights"] = False
