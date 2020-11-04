@@ -1,5 +1,5 @@
 from pathlib import Path
-import yaml
+import ruamel.yaml as yaml
 
 
 def get_best_checkpoint(path) -> Path:
@@ -37,14 +37,22 @@ def get_best_checkpoint(path) -> Path:
 if __name__ == "__main__":
 
     with open("params.yaml", "rb") as f:
-        configs = yaml.safe_load(f)
+        configs = yaml.round_trip_load(f)
+
+    with open("data/checkpoint.ckpt", "w+") as f:
+        pass
 
     if configs["train"]["load_weights"] or configs["train"]["resume_training"]:
         best_checkpoint = get_best_checkpoint(configs["train"]["checkpoint_path"])
         # move checkpoint to stage
         if best_checkpoint is not None:
             configs["train"]["checkpoint_path"] = str(best_checkpoint)
-            best_checkpoint.rename("data/checkpoints.ckpt")
+            best_checkpoint.rename("data/checkpoint.ckpt")
 
     with open("params.yaml", "w") as f:
-        yaml.dump(configs, f)
+        yaml.round_trip_dump(
+            configs,
+            f,
+            indent=4,
+            block_seq_indent=4,
+        )

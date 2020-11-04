@@ -2,10 +2,7 @@ stages:
   checkpoint:
     cmd: python utils/select_checkpoint.py
     deps:
-    - modules/
-    - nets/
     - params.yaml
-    - utils/
     outs:
     - data/checkpoint.ckpt
   train:

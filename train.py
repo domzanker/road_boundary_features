@@ -157,7 +157,7 @@ def train(opt):
     )
 
     best_checkpoint = Path("data/checkpoint.ckpt")
-    if best_checkpoint.is_file():
+    if best_checkpoint.stat().st_size > 0:
         checkpoint_file = str(best_checkpoint)
     else:
         print("No checkpoint file. Starting training from scratch")

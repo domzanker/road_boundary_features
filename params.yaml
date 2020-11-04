@@ -1,57 +1,55 @@
 dataset:
-        name: "road_boundary_dataset"
+    name: road_boundary_dataset
         #size: [640, 360]
         #size: [1280, 720]
-        size: null
-        train-dataset: "data/lyft-lvl5-15x10/train"
-        valid-dataset: "data/lyft-lvl5-15x10/valid"
-        test-dataset: "data/lyft-lvl5-15x10/test"
-        angle_bins: null
-        augmentation: 0.3
+    size:
+    train-dataset: data/lyft-lvl5-15x10/train
+    valid-dataset: data/lyft-lvl5-15x10/valid
+    test-dataset: data/lyft-lvl5-15x10/test
+    angle_bins:
+    augmentation: 0.3
 
 train:
-        gpus: 0
-        distributed_backend: null
-        log_gpu_memory: True
-        profiler: False
+    gpus: 0
+    distributed_backend:
+    log_gpu_memory: true
+    profiler: false
 
-        resume_training: False
-        load_weights: True
-        checkpoint_path: "data/checkpoints/"
+    resume_training: false
+    load_weights: true
+    checkpoint_path: data/checkpoints/
 
-        learning-rate: 1.0e-2
-        lr-decay: 0.5
-        lr_decay_step_size: 2
-        weight_decay: 1.0e-4 
+    learning-rate: 1.0e-2
+    lr-decay: 0.5
+    lr_decay_step_size: 2
+    weight_decay: 1.0e-4
 
-        batch-size: 6
-        accumulate_grad_batches: 5
+    batch-size: 6
+    accumulate_grad_batches: 5
 
-        losses: 
-                distance_loss: 
-                        loss: "mse"
-                        factor: 1.0
-                        args:
-                                reduction: "mean"
-                end_loss: 
-                        loss: "bce"
-                        factor: 10.0
-                        args:
-                                reduction: "mean"
-                direction_loss: 
-                        loss: "cosine_similarity"
-                        factor: 10.0
-                        args:
-                                reduction: "mean"
+    losses:
+        distance_loss:
+            loss: mse
+            factor: 1.0
+            args:
+                reduction: mean
+        end_loss:
+            loss: bce
+            factor: 10.0
+            args:
+                reduction: mean
+        direction_loss:
+            loss: cosine_similarity
+            factor: 10.0
+            args:
+                reduction: mean
 
-        epochs: 100
-        validation-interval: 0.5
-        validation-batches: 50
+    epochs: 100
+    validation-interval: 0.5
+    validation-batches: 50
 
-        logger-interval: 100
-        nmbr-logged-images: 9
-        checkpoint-interval: 1
+    logger-interval: 100
+    nmbr-logged-images: 9
+    checkpoint-interval: 1
 
 model: nets/shallow_feature_net.yaml
-        
-                
