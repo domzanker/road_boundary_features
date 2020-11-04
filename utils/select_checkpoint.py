@@ -39,7 +39,10 @@ if __name__ == "__main__":
     with open("params.yaml", "rb") as f:
         configs = yaml.safe_load(f)
 
-    best_checkpoint = get_best_checkpoint(configs["train"]["checkpoint_path"])
+    if configs["train"]["load_weights"] or configs["train"]["resume_training"]:
+        best_checkpoint = get_best_checkpoint(configs["train"]["checkpoint_path"])
+    else:
+        best_checkpoint = None
 
     with open("data/best_checkpoint", "w+") as f:
         yaml.dump({"best_checkpoint": str(best_checkpoint)}, f)
