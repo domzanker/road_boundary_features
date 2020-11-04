@@ -72,7 +72,7 @@ head:
                         strides: 1
                         dilation: 1
                         batch_norm: True
-                        end_activation: "relu"
+                        end_activation: "sigmoid"
                         dropout: 0.0
                 direction_branch:
                         in_channels: [64, 32, 16]
