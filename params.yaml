@@ -16,10 +16,10 @@ train:
         profiler: False
 
         resume_training: False
-        load_weights: True
+        load_weights: False
         checkpoint_path: "data/checkpoints/"
 
-        learning-rate: 1.0e-3
+        learning-rate: 1.0e-2
         lr-decay: 0.1
         lr_decay_step_size: 2
         weight_decay: 1.0e-4 
