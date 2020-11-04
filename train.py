@@ -156,24 +156,15 @@ def train(opt):
         monitor="val_loss",
     )
 
-    best_checkpoint = Path("data/best_checkpoint")
+    best_checkpoint = Path("data/checkpoint.ckpt")
     if best_checkpoint.is_file():
-        with best_checkpoint.open("r") as f:
-            checkpoint_file = yaml.safe_load(f)
-            checkpoint_file = checkpoint_file["best_checkpoint"]
+        checkpoint_file = str(best_checkpoint)
     else:
-        checkpoint_file = None
-
-    if checkpoint_file is None:
         print("No checkpoint file. Starting training from scratch")
         configs["train"]["load_weights"] = False
         configs["train"]["resume_training"] = False
-    else:
-        checkpoint_file = str(checkpoint_file)
-        configs["train"]["checkpoint_path"] = checkpoint_file
 
     if configs["train"]["load_weights"]:
-
         if opt.autoencoder:
             model = AutoEncoder.load_from_checkpoint(
                 checkpoint_file, strict=False, configs=configs
@@ -182,7 +173,6 @@ def train(opt):
             model = FeatureNet.load_from_checkpoint(
                 checkpoint_file, strict=False, configs=configs
             )
-            print("Loaded model from checkpoint ", checkpoint_file)
     else:
         # clean_dir("data/checkpoints/" + opt, strict=False.name)
         if opt.autoencoder:

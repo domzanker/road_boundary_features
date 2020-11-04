@@ -41,8 +41,10 @@ if __name__ == "__main__":
 
     if configs["train"]["load_weights"] or configs["train"]["resume_training"]:
         best_checkpoint = get_best_checkpoint(configs["train"]["checkpoint_path"])
-    else:
-        best_checkpoint = None
+        # move checkpoint to stage
+        if best_checkpoint is not None:
+            configs["train"]["checkpoint_path"] = str(best_checkpoint)
+            best_checkpoint.rename("data/checkpoints.ckpt")
 
-    with open("data/best_checkpoint", "w+") as f:
-        yaml.dump({"best_checkpoint": str(best_checkpoint)}, f)
+    with open("params.yaml", "w") as f:
+        yaml.dump(configs, f)
