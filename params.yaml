@@ -7,7 +7,7 @@ dataset:
         valid-dataset: "data/lyft-lvl5-15x10/valid"
         test-dataset: "data/lyft-lvl5-15x10/test"
         angle_bins: null
-        augmentation: 0.2
+        augmentation: 0.3
 
 train:
         gpus: 0
@@ -16,11 +16,11 @@ train:
         profiler: False
 
         resume_training: False
-        load_weights: False
+        load_weights: True
         checkpoint_path: "data/checkpoints/"
 
         learning-rate: 1.0e-2
-        lr-decay: 0.1
+        lr-decay: 0.5
         lr_decay_step_size: 2
         weight_decay: 1.0e-4 
 
@@ -35,12 +35,12 @@ train:
                                 reduction: "mean"
                 end_loss: 
                         loss: "bce"
-                        factor: 1.0
+                        factor: 10.0
                         args:
                                 reduction: "mean"
                 direction_loss: 
                         loss: "cosine_similarity"
-                        factor: 1.0
+                        factor: 10.0
                         args:
                                 reduction: "mean"
 
