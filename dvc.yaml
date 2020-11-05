@@ -6,9 +6,9 @@ stages:
     outs:
     - data/checkpoint.ckpt
   train:
-    cmd: ionice -c3 python train.py --name shallow_feature_net --configs params.yaml
-      --gpu 0 1
+    cmd: ionice -c3 python train.py
     deps:
+    - experiment.yaml
     - data/checkpoint.ckpt
     - modules/
     - nets
@@ -20,3 +20,9 @@ stages:
     outs:
     - data/checkpoints
     - data/comet_ml
+  setup:
+    cmd: python utils/setup_experiment.py
+    outs:
+    - experiment.yaml:
+        persist: true
+    always_changed: true

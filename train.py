@@ -71,7 +71,7 @@ def trainer_configs(opt, configs):
         "limit_val_batches": configs["train"]["validation-batches"],
         "val_check_interval": configs["train"]["validation-interval"],
         "log_every_n_steps": configs["train"]["logger-interval"],
-        "log_gpu_memory": True,
+        "log_gpu_memory": opt.log_gpu_memory,
         "profiler": opt.profile,
     }
     if "trainer_args" in configs["train"].keys():
@@ -91,7 +91,7 @@ def train(opt):
 
     trainer_confs = trainer_configs(opt, configs)
 
-    if opt.find_lr and trainer_confs["distributed_backend"] is not None:
+    if opt.find_lr and opt.distributed_backend is not None:
         print("Learning rate finder is not implemented for distributed environment!")
         opt.find_lr = False
 
@@ -248,12 +248,28 @@ if __name__ == "__main__":
     parser.add_argument("--comet", type=str, default=None, help="")
 
     parser.add_argument("--use_encoder", action="store_true", default=False, help="")
+    parser.add_argument("--log_gpu_memory", action="store_true", default=True, help="")
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
     parser.add_argument("--find_lr", action="store_true", default=False, help="")
+    parser.add_argument(
+        "--use_experiment_yaml", action="store_true", default=False, help=""
+    )
 
     # FIXME resume training
 
     opt = parser.parse_args()
+
+    if opt.use_experiment_yaml:
+        with open("experiment.yaml", "r") as f:
+            ex_confs = yaml.safe_load(f)
+
+        opt.gpus = ex_confs["gpu"]
+        opt.distributed_backend = ex_confs["distributed_backend"]
+        opt.log_gpu_memory = ex_confs["log_gpu_memory"]
+        opt.profile = ex_confs["profile"]
+        opt.name = ex_confs["name"]
+        opt.tags = ex_confs["tags"]
+        opt.configs = ex_confs["configs"]
 
     train(opt)
