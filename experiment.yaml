@@ -1,0 +1,8 @@
+gpu: [0, 1]
+distributed_backend: ddp
+log_gpu_memory: true
+profile: false
+configs: params.yaml
+
+name: shallow_feature_net
+tags:
