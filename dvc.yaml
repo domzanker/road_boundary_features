@@ -6,7 +6,7 @@ stages:
     outs:
     - data/checkpoint.ckpt
   train:
-    cmd: ionice -c3 python train.py
+    cmd: ionice -c3 python train.py --use_experiment_yaml
     deps:
     - experiment.yaml
     - data/checkpoint.ckpt
