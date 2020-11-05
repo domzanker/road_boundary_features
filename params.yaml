@@ -16,7 +16,7 @@ train:
     profiler: false
 
     resume_training: false
-    load_weights: true
+    load_weights: false
     checkpoint_path: data/checkpoints/
 
     learning-rate: 1.0e-2
