@@ -25,4 +25,5 @@ stages:
     outs:
     - experiment.yaml:
         persist: true
+        cache: false
     always_changed: true
