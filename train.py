@@ -264,7 +264,7 @@ if __name__ == "__main__":
         with open("experiment.yaml", "r") as f:
             ex_confs = yaml.safe_load(f)
 
-        opt.gpus = ex_confs["gpu"]
+        opt.gpu = ex_confs["gpu"]
         opt.distributed_backend = ex_confs["distributed_backend"]
         opt.log_gpu_memory = ex_confs["log_gpu_memory"]
         opt.profile = ex_confs["profile"]
