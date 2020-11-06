@@ -243,7 +243,10 @@ class FeatureNet(pl.LightningModule):
         )
         lr_scheduler = {
             "scheduler": ReduceLROnPlateau(
-                optimizer, mode="min", factor=self.train_configs["lr-decay"], patience=1
+                optimizer,
+                mode="min",
+                factor=self.train_configs["lr-decay"],
+                patience=self.train_configs["lr_decay_patience"],
             ),
             "monitor": "val_loss",
             "name": "plateau_scheduler",
