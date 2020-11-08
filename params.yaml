@@ -24,8 +24,8 @@ train:
     lr_decay_patience: 2
     weight_decay: 1.0e-4
 
-    batch-size: 3
-    accumulate_grad_batches: 10
+    batch-size: 5
+    accumulate_grad_batches: 4
 
     losses:
         distance_loss:
