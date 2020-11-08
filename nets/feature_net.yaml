@@ -2,14 +2,21 @@
 use_custom: True
 input_size: [768, 448] # for 4 layer resnet: /112
 input_channels: 4
-encoder_prec:
-        out_channels: 64
-        stride: 2
-        kernel_size: 7
-        dropout: 0.0
         
+encoder_prec:
+        conv:
+                out_channels: 64
+                stride: 2
+                dilation: 2
+                kernel_size: 7
+                dropout: 0.0
+        pool:
+                kernel_size: 3
+                stride: 2
+                padding: 1
 
 encoder:
+
         encoder_depth: 4
         in_channels: [64, 128, 256, 512]
         out_channels: [128, 256, 512, 1024]
@@ -72,7 +79,7 @@ head:
                 strides: 1,
                 dilation: 1,
                 batch_norm: True,
-                end_activation: "sigmoid",
+                end_activation: "relu",
                 dropout: 0.0
                 }, 
                 {

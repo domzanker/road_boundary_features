@@ -3,9 +3,9 @@ dataset:
         #size: [640, 360]
         #size: [1280, 720]
     size:
-    train-dataset: data/nuscenes-complete-15x10/train
-    valid-dataset: data/nuscenes-complete-15x10/valid
-    test-dataset: data/nuscenes-complete-15x10/test
+    train-dataset: data/lyft-lvl5-15x10/train
+    valid-dataset: data/lyft-lvl5-15x10/valid
+    test-dataset: data/lyft-lvl5-15x10/test
     angle_bins:
     augmentation: 0.3
 
@@ -24,8 +24,8 @@ train:
     lr_decay_patience: 2
     weight_decay: 1.0e-4
 
-    batch-size: 6
-    accumulate_grad_batches: 5
+    batch-size: 3
+    accumulate_grad_batches: 10
 
     losses:
         distance_loss:
@@ -52,4 +52,4 @@ train:
     nmbr-logged-images: 9
     checkpoint-interval: 1
 
-model: nets/shallow_feature_net.yaml
+model: nets/feature_net.yaml
