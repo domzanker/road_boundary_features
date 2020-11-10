@@ -4,5 +4,5 @@ log_gpu_memory: true
 profile: false
 configs: params.yaml
 
-name: feature_net
+name: shallow_feature_net
 tags:
