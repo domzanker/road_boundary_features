@@ -15,7 +15,7 @@ from utils.modules import (
     SegmentationHead,
     activation_func,
 )
-from utils.losses import MultiFeaturesLoss
+from utils.losses import MultiTaskUncertaintyLoss
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
@@ -68,7 +68,7 @@ class FeatureNet(pl.LightningModule):
             else {}
         )
         """
-        self.loss = MultiFeaturesLoss(**self.train_configs["losses"])
+        self.loss = MultiTaskUncertaintyLoss(**self.train_configs["losses"])
 
         self.train_mse = pl.metrics.MeanSquaredError()
         self.train_dist_mse = pl.metrics.MeanSquaredError()
@@ -114,7 +114,11 @@ class FeatureNet(pl.LightningModule):
             "train_distance_loss": losses["distance_loss"].detach(),
             "train_end_loss": losses["end_loss"].detach(),
             "train_direction_loss": losses["direction_loss"].detach(),
+            "train_distance_variance": losses["loss_variance"][0].detach(),
+            "train_end_variance": losses["loss_variance"][1].detach(),
+            "train_direction_variance": losses["loss_variance"][2].detach(),
         }
+        self.log_dict({"loss_variance"})
         self.log_dict(loss_dict)
 
         prediction = segmentation.detach()
@@ -150,6 +154,9 @@ class FeatureNet(pl.LightningModule):
             "val_distance_loss": losses["distance_loss"].detach(),
             "val_end_loss": losses["end_loss"].detach(),
             "val_direction_loss": losses["direction_loss"].detach(),
+            "val_distance_variance": losses["loss_variance"][0].detach(),
+            "val_end_variance": losses["loss_variance"][1].detach(),
+            "val_direction_variance": losses["loss_variance"][2].detach(),
         }
         self.log_dict(loss_dict)
         self.log("val_loss", losses["total_loss"].item(), prog_bar=True, logger=True)
