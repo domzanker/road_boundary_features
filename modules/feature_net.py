@@ -34,7 +34,7 @@ class FeatureNet(pl.LightningModule):
         if self.model_configs["use_custom"]:
 
             self.encoder_prec = Sequential(
-                torch.nn.BatchNorm2d(4),
+                torch.nn.BatchNorm2d(self.model_configs["input_channels"]),
                 ConvBlock(
                     in_channels=self.model_configs["input_channels"],
                     **self.model_configs["encoder_prec"]["conv"],
@@ -84,7 +84,9 @@ class FeatureNet(pl.LightningModule):
 
         if "input_size" in self.model_configs.keys():
             s = self.model_configs["input_size"]
-            self.example_input_array = torch.ones([1, 4, s[0], s[1]])
+            self.example_input_array = torch.ones(
+                [1, self.model_configs["input_channels"], s[0], s[1]]
+            )
 
     def forward(self, x):
 
