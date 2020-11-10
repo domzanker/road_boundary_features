@@ -71,9 +71,12 @@ class RoadBoundaryDataset(Dataset):
             assert f["end_points_map"].shape[-1] == 1
 
             rgb = torch.from_numpy(f["rgb"][()]).float() / 255  # uint8 -> float32
-            height = torch.from_numpy(
-                np.nan_to_num(f["lidar_height"][()])
-            ).float()  # float16 -> float32
+            h = np.nan_to_num(f["lidar_height"][()])
+            h = h[None, :, :]
+            height = torch.from_numpy(h).float()  # float16 -> float32
+            height_deriv = torch.from_numpy(
+                cv2.Laplacian(h.astype(np.float32), cv2.CV_32F, ksize=3)
+            ).float()
 
             # float16->float32
             inverse_distance_map = torch.from_numpy(
@@ -94,7 +97,6 @@ class RoadBoundaryDataset(Dataset):
         assert torch.isfinite(height).all()
 
         rgb = rgb.permute(2, 0, 1)
-        height = height[None, :, :]
 
         inverse_distance_map = inverse_distance_map.permute(2, 0, 1)
         end_points_map = end_points_map.permute(2, 0, 1)
@@ -118,7 +120,7 @@ class RoadBoundaryDataset(Dataset):
         )
         assert targets_torch.shape[0] == 4
         # targets_torch = inverse_distance_map
-        image_torch = torch.cat([rgb, height])
+        image_torch = torch.cat([rgb, height, height_deriv])
         if self.image_size is not None:
             targets_torch = F.interpolate(
                 targets_torch[None, :, :, :], size=self.image_size
@@ -194,4 +196,13 @@ class ImageDataset(RoadBoundaryDataset):
 
 
 if __name__ == "__main__":
-    pass
+    import matplotlib.pyplot as plt
+
+    path = "data/lyft-lvl5-15x10/valid"
+    d = RoadBoundaryDataset(Path(path))
+    fig, ax = plt.subplots()
+
+    sample = d.__getitem__(0)
+    print(sample[0].shape)
+    ax.imshow(sample[0][4])
+    plt.show()
