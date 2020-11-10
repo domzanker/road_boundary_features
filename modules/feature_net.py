@@ -214,11 +214,19 @@ class FeatureNet(pl.LightningModule):
         dir_comp = make_grid([dir_dbg, dir_pred], nrow=1)
         self._log_image(dir_comp, "validation direction comparison")
 
-        lid = x[:, 3:, :, :]
+        lid = x[:, 3:4, :, :]
         lid -= lid.min()
         lid /= lid.max()
         lid = make_grid(apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows)
         self._log_image(lid, "validation lidar input")
+
+        lid_deriv = x[:, 4:, :, :]
+        lid_deriv -= lid_deriv.min()
+        lid_deriv /= lid_deriv.max()
+        lid_deriv = make_grid(
+            apply_colormap(lid_deriv[:nmbr_images, :, :, :]), nrow=nrows
+        )
+        self._log_image(lid_deriv, "validation lidar height deriv")
 
         rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
         self._log_image(rgb, "validation input rgb")
