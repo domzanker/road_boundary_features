@@ -139,9 +139,9 @@ class RoadBoundaryDataset(Dataset):
             )
             """
         if self.augmentation is not None:
-            augmented = self.augmentation(torch.stack([image_torch, targets_torch]))
-            image_torch = augmented[0]
-            targets_torch = augmented[1]
+            augmented = self.augmentation(torch.cat([image_torch, targets_torch]))
+            image_torch = augmented[:5]
+            targets_torch = augmented[5:]
 
         return (image_torch, targets_torch)
 
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     path = "data/lyft-lvl5-15x10/valid"
-    d = RoadBoundaryDataset(Path(path))
+    d = RoadBoundaryDataset(Path(path), image_size=(720, 490), augmentation=1)
     fig, ax = plt.subplots()
 
     sample = d.__getitem__(0)
