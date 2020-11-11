@@ -79,9 +79,7 @@ class MultiTaskUncertaintyLoss(Module):
         end_loss,
         direction_loss,
     ):
-        super(MultiTaskUncertaintyLoss, self).__init__(
-            distance_loss, end_loss, direction_loss
-        )
+        super(MultiTaskUncertaintyLoss, self).__init__()
         # factor = log(sigma)
         self.factors = torch.ones([3])
 
