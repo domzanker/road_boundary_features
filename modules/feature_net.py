@@ -120,7 +120,6 @@ class FeatureNet(pl.LightningModule):
             "train_end_variance": losses["loss_variance"][1].detach(),
             "train_direction_variance": losses["loss_variance"][2].detach(),
         }
-        self.log_dict({"loss_variance"})
         self.log_dict(loss_dict)
 
         prediction = segmentation.detach()
