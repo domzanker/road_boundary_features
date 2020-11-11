@@ -1,7 +1,7 @@
 from torch.nn import ModuleDict, ModuleList, Module
 from torch.nn import MSELoss, CrossEntropyLoss, BCELoss, NLLLoss, CosineSimilarity
 import torch.nn
-from typing import Optional, Callable, Union, List, Dict
+from typing import Optional, Callable, Union, List, Dict, Tuple
 from math import pi
 
 
@@ -69,4 +69,48 @@ class MultiFeaturesLoss(Module):
             "distance_loss": distance_loss,
             "end_loss": end_loss,
             "direction_loss": direction_loss,
+        }
+
+
+class MultiTaskUncertaintyLoss(Module):
+    def __init__(
+        self,
+        distance_loss,
+        end_loss,
+        direction_loss,
+    ):
+        super(MultiTaskUncertaintyLoss, self).__init__(
+            distance_loss, end_loss, direction_loss
+        )
+        # factor = log(sigma)
+        self.factors = torch.ones([3])
+
+        self.distance_loss = loss_func(distance_loss["loss"], **distance_loss["args"])
+        self.end_loss = loss_func(end_loss["loss"], **end_loss["args"])
+        self.direction_loss = loss_func(
+            direction_loss["loss"], **direction_loss["args"]
+        )
+
+    def forward(self, x, y):
+        distance_loss = self.distance_loss(x[:, :1, :, :], y[:, :1, :, :])
+        end_loss = self.end_loss(x[:, 1:2, :, :], y[:, 1:2, :, :])
+        direction_loss = self.direction_loss(x[:, 2:4, :, :], y[:, 2:4, :, :])
+
+        total_loss = 0
+
+        exp_facts = torch.exp(-self.factors)
+        total_loss = (
+            exp_facts[0] * distance_loss
+            + self.factors[0]
+            + exp_facts[1] * end_loss
+            + self.factors[1]
+            + exp_facts[2] * direction_loss
+            + self.factors[2]
+        )
+        return {
+            "total_loss": total_loss,
+            "distance_loss": distance_loss.detach(),
+            "end_loss": end_loss.detach(),
+            "direction_loss": direction_loss.detach(),
+            "loss_variance": self.factors.detach(),
         }
