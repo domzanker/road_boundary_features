@@ -96,12 +96,12 @@ class MultiTaskUncertaintyLoss(Module):
 
         exp_facts = torch.exp(-self.factors)
         total_loss = (
-            exp_facts[0] * distance_loss ** 2
-            + self.factors[0]
-            + exp_facts[1] * end_loss ** 2
-            + self.factors[1]
-            + exp_facts[2] * direction_loss ** 2
-            + self.factors[2]
+            exp_facts[0] * distance_loss
+            + self.factors[0] ** 2
+            + exp_facts[1] * end_loss
+            + self.factors[1] ** 2
+            + exp_facts[2] * direction_loss
+            + self.factors[2] ** 2
         )
         return {
             "total_loss": total_loss,
