@@ -73,6 +73,10 @@ class MultiFeaturesLoss(Module):
 
 
 class MultiTaskUncertaintyLoss(Module):
+    """
+    implements https://arxiv.org/pdf/1805.06334.pdf
+    """
+
     def __init__(
         self,
         distance_loss,
@@ -94,14 +98,15 @@ class MultiTaskUncertaintyLoss(Module):
         end_loss = self.end_loss(x[:, 1:2, :, :], y[:, 1:2, :, :])
         direction_loss = self.direction_loss(x[:, 2:4, :, :], y[:, 2:4, :, :])
 
-        exp_facts = torch.exp(-self.factors)
+        exp_facts = 1 / (2 * self.factors ** 2)
+        log_fac = torch.log(1 + self.factors ** 2)
         total_loss = (
             exp_facts[0] * distance_loss
-            + self.factors[0] ** 2
+            + log_fac[0]
             + exp_facts[1] * end_loss
-            + self.factors[1] ** 2
+            + log_fac[1]
             + exp_facts[2] * direction_loss
-            + self.factors[2] ** 2
+            + log_fac[2]
         )
         return {
             "total_loss": total_loss,
