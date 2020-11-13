@@ -108,8 +108,8 @@ class MultiTaskUncertaintyLoss(Module):
         )
         return {
             "total_loss": total_loss.mean(),
-            "distance_loss": distance_loss.mean().detach(),
-            "end_loss": end_loss.mean().detach(),
-            "direction_loss": direction_loss.mean().detach(),
-            "loss_variance": self.factors.detach(),
+            "distance_loss": distance_loss.detach().mean(),
+            "end_loss": end_loss.detach().mean(),
+            "direction_loss": direction_loss.detach().mean(),
+            "loss_variance": self.factors.detach().mean(),
         }
