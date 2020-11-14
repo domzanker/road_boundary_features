@@ -85,7 +85,7 @@ class MultiTaskUncertaintyLoss(Module):
     ):
         super(MultiTaskUncertaintyLoss, self).__init__()
         # factor = log(sigma)
-        self.factors = torch.nn.Parameter(torch.ones(3), requires_grad=True)
+        self.log_var = torch.nn.Parameter(torch.zero(3), requires_grad=True)
 
         self.distance_loss = loss_func(distance_loss["loss"], **distance_loss["args"])
         self.end_loss = loss_func(end_loss["loss"], **end_loss["args"])
@@ -98,19 +98,21 @@ class MultiTaskUncertaintyLoss(Module):
         end_loss = self.end_loss(x[:, 1:2, :, :], y[:, 1:2, :, :])
         direction_loss = self.direction_loss(x[:, 2:4, :, :], y[:, 2:4, :, :])
 
-        log_fac = torch.log(1 + self.factors ** 2)
+        # s = log(sigma**2)
+        exp_fac = torch.exp(-self.log_var)
+        regulization = torch.log(1 + torch.exp(self.log_var))
         total_loss = (
-            1 / (2 * self.factors[0] ** 2 + 1e-8) * distance_loss
-            + log_fac[0]
-            + 1 / (2 * self.factors[1] ** 2 + 1e-8) * end_loss
-            + log_fac[1]
-            + 1 / (2 * self.factors[2] ** 2 + 1e-8) * direction_loss
-            + log_fac[2]
+            exp_fac[0] * distance_loss
+            + regulization[0]
+            + exp_fac[1] * end_loss
+            + regulization[1]
+            + exp_fac[2] * direction_loss
+            + regulization[2]
         )
         return {
             "total_loss": total_loss,
             "distance_loss": distance_loss.detach(),
             "end_loss": end_loss.detach(),
             "direction_loss": direction_loss.detach(),
-            "loss_variance": self.factors.detach(),
+            "loss_variance": self.log_var.detach(),
         }
