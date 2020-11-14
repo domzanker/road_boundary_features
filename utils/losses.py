@@ -85,7 +85,7 @@ class MultiTaskUncertaintyLoss(Module):
     ):
         super(MultiTaskUncertaintyLoss, self).__init__()
         # factor = log(sigma)
-        self.log_var = torch.nn.Parameter(torch.zero(3), requires_grad=True)
+        self.log_var = torch.nn.Parameter(torch.zeros(3), requires_grad=True)
 
         self.distance_loss = loss_func(distance_loss["loss"], **distance_loss["args"])
         self.end_loss = loss_func(end_loss["loss"], **end_loss["args"])
