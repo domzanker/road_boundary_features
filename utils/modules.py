@@ -5,6 +5,16 @@ from torch.nn.common_types import _size_2_t
 import segmentation_models_pytorch as smp
 
 
+def upsampling_modules(upsampling: str, *args, **kwargs):
+    return nn.ModuleDict(
+        {
+            "bilinear": nn.UpsamplingBilinear2d(*args, **kwargs),
+            "nearest": nn.UpsamplingNearest2d(*args, **kwargs),
+            "transposed": nn.ConvTranspose2d(*args, **kwargs),
+        }
+    )[upsampling]
+
+
 def activation_func(activation: str):
     return torch.nn.ModuleDict(
         {
