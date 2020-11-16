@@ -302,6 +302,7 @@ class DecoderBlock(Module):
         dilation: Union[_size_2_t, List[_size_2_t]] = 0,
         activation: str = "relu",
         upsampling_mode: str = "nearest",
+        upsample_indx: int = 0,
         upsampling: Optional[_size_2_t] = 2,
         apply_instance_norm: bool = False,
         *args,
@@ -345,6 +346,7 @@ class DecoderBlock(Module):
         else:
             size = None
             factor = upsampling
+        self.upsample_indx = upsample_indx
         self.upsample = torch.nn.Upsample(
             size=size, scale_factor=factor, mode=upsampling_mode
         )
@@ -365,8 +367,9 @@ class DecoderBlock(Module):
         if skip is not None:
             x = x + skip
 
-        x = self.upsample(x)
         for i, layer in enumerate(self.block):
+            if i == self.upsample_indx:
+                x = self.upsample(x)
             x = self.instance_normalize[i](x)
             x = layer(x)
         return x
