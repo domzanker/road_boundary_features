@@ -116,6 +116,12 @@ def train(opt):
     else:
         augmentation = None
 
+    # get real batch size
+    len_gpu = (
+        len(trainer_confs["gpus"]) if isinstance(trainer_confs["gpus"], list) else 0
+    )
+    batch_size_per_gpu = configs["train"]["batch-size"] // (len_gpu + 1)
+
     train_dataset = dataset(
         path=Path(configs["dataset"]["train-dataset"]),
         image_size=configs["dataset"]["size"],
@@ -125,7 +131,7 @@ def train(opt):
     )
     train_loader = DataLoader(
         train_dataset,
-        batch_size=configs["train"]["batch-size"],
+        batch_size=batch_size_per_gpu,
         shuffle=True,
         num_workers=opt.cpu_workers,
         pin_memory=True,
@@ -139,7 +145,7 @@ def train(opt):
     )
     val_loader = DataLoader(
         val_dataset,
-        batch_size=configs["train"]["batch-size"],
+        batch_size=batch_size_per_gpu,
         num_workers=max(1, int(opt.cpu_workers // 4)),
         pin_memory=True,
     )
