@@ -15,8 +15,8 @@ train:
     log_gpu_memory: true
     profiler: false
 
-    resume_training: false
-    load_weights: false
+    resume_training: true
+    load_weights: true
     checkpoint_path: data/checkpoints/
 
     learning-rate: 1.0e-2
@@ -44,7 +44,7 @@ train:
             args:
                 reduction: mean
 
-    epochs: 100
+    epochs: 500
     validation-interval: 0.5
     validation-batches: 50
 
