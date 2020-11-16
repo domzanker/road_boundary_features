@@ -114,5 +114,5 @@ class MultiTaskUncertaintyLoss(Module):
             "distance_loss": distance_loss.detach(),
             "end_loss": end_loss.detach(),
             "direction_loss": direction_loss.detach(),
-            "loss_variance": self.log_var.detach(),
+            "loss_variance": torch.exp(self.log_var.detach()),
         }
