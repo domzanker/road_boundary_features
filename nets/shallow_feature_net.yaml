@@ -21,7 +21,6 @@ encoder:
         out_channels: [128, 256]
 
         # configs for encoder blocks
-
         kernel_size: 3
         nmbr_res_blocks: 3
         dilation: 2
@@ -36,7 +35,7 @@ decoder:
                 # block conv1
                 block_1:
                         upsample_indx: 0 # upsample before first conv
-                        upsample_mode: "bilinear"
+                        upsampling_mode: "bilinear"
                         in_channels: [256, 256, 128, 128]
                         out_channels: [256, 128, 128, 128]
                         kernel_size: [1, 3, 3, 1]
@@ -47,7 +46,7 @@ decoder:
                         apply_instance_norm: True
                 block_2:
                         upsample_indx: 0 # upsample before first conv
-                        upsample_mode: "bilinear"
+                        upsampling_mode: "bilinear"
                         in_channels: [128, 128, 64, 64]
                         out_channels: [128, 64, 64, 64]
                         kernel_size: [1, 3, 3, 1]
