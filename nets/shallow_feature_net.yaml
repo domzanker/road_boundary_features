@@ -34,7 +34,7 @@ decoder:
         blocks:
                 # block conv1
                 block_1:
-                        upsample_indx: 1 # upsample before first conv
+                        upsample_indx: 0 # upsample before first conv
                         upsampling_mode: "nearest"
                         in_channels: [512, 512, 256, 256]
                         out_channels: [512, 256, 256, 256]
@@ -45,7 +45,7 @@ decoder:
                         dropout: 0.0
                         apply_instance_norm: True
                 block_2:
-                        upsample_indx: 1 # upsample before first conv
+                        upsample_indx: 0 # upsample before first conv
                         upsampling_mode: "nearest"
                         in_channels: [256, 256, 128, 128]
                         out_channels: [256, 128, 128, 128]
@@ -56,7 +56,7 @@ decoder:
                         dropout: 0.0
                         apply_instance_norm: True
                 block_3:
-                        upsample_indx: 1 # upsample before first conv
+                        upsample_indx: 0 # upsample before first conv
                         upsampling_mode: "nearest"
                         upsampling: 4
                         in_channels: [128, 128, 64, 64]
