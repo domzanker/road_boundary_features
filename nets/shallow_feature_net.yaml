@@ -15,10 +15,10 @@ encoder_prec:
                 padding: 1
 
 encoder:
-        encoder_depth: 2
+        encoder_depth: 3
         
-        in_channels: [64, 128]
-        out_channels: [128, 256]
+        in_channels: [64, 128, 256]
+        out_channels: [128, 256, 512]
 
         # configs for encoder blocks
         kernel_size: 3
@@ -29,11 +29,22 @@ encoder:
         dropout: 0.0
 
 decoder:
-        decoder_depth: 2
+        decoder_depth: 3
         conv_per_block: 4
         blocks:
                 # block conv1
                 block_1:
+                        upsample_indx: 1 # upsample before first conv
+                        upsampling_mode: "nearest"
+                        in_channels: [512, 512, 256, 256]
+                        out_channels: [512, 256, 256, 256]
+                        kernel_size: [1, 3, 3, 1]
+                        stride: 1
+                        dilation: 1
+                        activation: "relu"
+                        dropout: 0.0
+                        apply_instance_norm: True
+                block_2:
                         upsample_indx: 1 # upsample before first conv
                         upsampling_mode: "nearest"
                         in_channels: [256, 256, 128, 128]
@@ -44,16 +55,16 @@ decoder:
                         activation: "relu"
                         dropout: 0.0
                         apply_instance_norm: True
-                block_2:
+                block_3:
                         upsample_indx: 1 # upsample before first conv
                         upsampling_mode: "nearest"
+                        upsampling: 4
                         in_channels: [128, 128, 64, 64]
                         out_channels: [128, 64, 64, 64]
                         kernel_size: [1, 3, 3, 1]
                         stride: 1
                         dilation: 1
                         activation: "relu"
-                        upsampling: 4
                         dropout: 0.0
                         apply_instance_norm: True
 head: 

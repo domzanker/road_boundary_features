@@ -364,7 +364,9 @@ class DecoderBlock(Module):
             factor = upsampling
         self.upsample_indx = upsample_indx
         self.upsample = torch.nn.Upsample(
-            size=size, scale_factor=factor, mode=upsampling_mode
+            size=size,
+            scale_factor=factor,
+            mode=upsampling_mode,
         )
         if apply_instance_norm:
             self.instance_normalize = torch.nn.ModuleList(
