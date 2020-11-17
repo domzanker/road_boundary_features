@@ -20,9 +20,8 @@ def loss_func(loss: str, reduction: str = "mean", **kwargs):
 class CosineSimilarityLoss(Module):
     def __init__(self, reduction, *args, **kwargs):
         super(CosineSimilarityLoss, self).__init__()
-        self.cosine_similarity = CosineSimilarity(dim=1)
+        self.cosine_similarity = CosineSimilarity(dim=-1)
         self.reduction = reduction
-        self.pi = torch.acos(torch.zeros(1)).item() * 2
 
     def forward(self, x, y):
 
