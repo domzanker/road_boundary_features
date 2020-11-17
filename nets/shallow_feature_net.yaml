@@ -35,7 +35,7 @@ decoder:
                 # block conv1
                 block_1:
                         upsample_indx: 1 # upsample before first conv
-                        upsampling_mode: "bilinear"
+                        upsampling_mode: "nearest"
                         in_channels: [256, 256, 128, 128]
                         out_channels: [256, 128, 128, 128]
                         kernel_size: [1, 3, 3, 1]
@@ -46,7 +46,7 @@ decoder:
                         apply_instance_norm: True
                 block_2:
                         upsample_indx: 1 # upsample before first conv
-                        upsampling_mode: "bilinear"
+                        upsampling_mode: "nearest"
                         in_channels: [128, 128, 64, 64]
                         out_channels: [128, 64, 64, 64]
                         kernel_size: [1, 3, 3, 1]
