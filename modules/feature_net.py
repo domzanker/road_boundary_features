@@ -396,24 +396,27 @@ class DecoderStage(Module):
 class Encoder(Module):
     def __init__(
         self,
-        encoder_depth: int,
-        in_channels: Union[int, List[int]],
+        encoder_depth: Optional[int] = None,
+        in_channels: Optional[Union[int, List[int]]] = None,
         out_channels: Optional[List[int]] = None,
         **kwargs,
     ):
         super(Encoder, self).__init__()
-        if not isinstance(in_channels, list):
-            # per default double the number of channels with every encoder block
-            in_channels = [in_channels * 2 ** c for c in range(encoder_depth)]
-        if out_channels is None:
-            out_channels = in_channels[1:]
-            out_channels.append(in_channels[-1] * 2)
 
         if "stages" in kwargs.keys():
             self.stages = torch.nn.ModuleList(
                 [EncoderStage(**blocks) for key, blocks in kwargs["stages"].items()]
             )
         else:
+            if encoder_depth is None or in_channels is None:
+                raise AttributeError
+
+            if not isinstance(in_channels, list):
+                # per default double the number of channels with every encoder block
+                in_channels = [in_channels * 2 ** c for c in range(encoder_depth)]
+            if out_channels is None:
+                out_channels = in_channels[1:]
+                out_channels.append(in_channels[-1] * 2)
             self.blocks = torch.nn.ModuleList(
                 [
                     EncoderStage(
