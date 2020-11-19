@@ -4,7 +4,7 @@ input_size: [768, 448] # for 4 layer resnet: /112
 input_channels: 5
 encoder_prec:
         conv:
-                out_channels: 64
+                out_channels: 32
                 stride: 2
                 dilation: 2
                 kernel_size: 7
@@ -17,24 +17,45 @@ encoder_prec:
 encoder:
         encoder_depth: 3
         
-        in_channels: [64, 128, 256]
-        out_channels: [128, 256, 512]
-
         # configs for encoder blocks
-        kernel_size: 3
-        nmbr_res_blocks: 3
-        dilation: 2
-        batch_norm: True
-        activation: "relu"
-        dropout: 0.0
-
+        stages:
+                stage_1:
+                        in_cannels: 32
+                        out_channels: 64
+                        nmbr_res_blocks: 3
+                        kernel_size: 3
+                        dilation: [4, 8, 0]
+                        downsample_factor: 1
+                        batch_norm: True
+                        activation: "relu"
+                        dropout: 0.0
+                stage_2:
+                        in_cannels: 64
+                        out_channels: 128
+                        nmbr_res_blocks: 3
+                        kernel_size: 3
+                        dilation: [4, 8, 0]
+                        downsample_factor: 2
+                        batch_norm: True
+                        activation: "relu"
+                        dropout: 0.0
+                stage_3:
+                        in_cannels: 128
+                        out_channels: 256
+                        nmbr_res_blocks: 3
+                        kernel_size: 3
+                        dilation: [4, 8, 0]
+                        downsample_factor: 2
+                        batch_norm: True
+                        activation: "relu"
+                        dropout: 0.0
 decoder:
         decoder_depth: 3
         conv_per_block: 4
-        blocks:
+        stages:
                 # block conv1
-                block_1:
-                        upsample_indx: 0 # upsample before first conv
+                stage_1:
+                        upsample_indx: 1 # upsample before first conv
                         upsampling_mode: "nearest"
                         in_channels: [512, 512, 256, 256]
                         out_channels: [512, 256, 256, 256]
@@ -44,8 +65,8 @@ decoder:
                         activation: "relu"
                         dropout: 0.0
                         apply_instance_norm: True
-                block_2:
-                        upsample_indx: 0 # upsample before first conv
+                stage_2:
+                        upsample_indx: 1 # upsample before first conv
                         upsampling_mode: "nearest"
                         in_channels: [256, 256, 128, 128]
                         out_channels: [256, 128, 128, 128]
@@ -55,10 +76,10 @@ decoder:
                         activation: "relu"
                         dropout: 0.0
                         apply_instance_norm: True
-                block_3:
-                        upsample_indx: 0 # upsample before first conv
+                stage_3:
+                        upsample_indx: 1 # upsample before first conv
                         upsampling_mode: "nearest"
-                        upsampling: 4
+                        upsampling: 2
                         in_channels: [128, 128, 64, 64]
                         out_channels: [128, 64, 64, 64]
                         kernel_size: [1, 3, 3, 1]
