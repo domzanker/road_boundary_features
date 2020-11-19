@@ -188,14 +188,22 @@ def train(opt):
 
     logger = TensorBoardLogger("data/tensorboard", opt.name)
     # clean_dir("data/comet_ml/")
-    comet_logger = CometLogger(
-        save_dir="data/comet_ml",
-        project_name="road-boundary-features",
-        experiment_name=opt.name,
-        experiment_key=opt.comet,
-    )
-    comet_logger.experiment.add_tag(opt.name)
-    comet_logger.experiment.add_tags(opt.tags)
+    if not opt.test:
+        comet_logger = CometLogger(
+            save_dir="data/comet_ml",
+            project_name="road-boundary-features",
+            experiment_name=opt.name,
+            experiment_key=opt.comet,
+        )
+        comet_logger.experiment.add_tag(opt.name)
+        comet_logger.experiment.add_tags(opt.tags)
+    else:
+        comet_logger = CometLogger(
+            save_dir="data/comet_ml",
+            project_name="road-boundary-features",
+            offline=True,
+            experiment_name="test",
+        )
 
     if configs["train"]["resume_training"]:
         trainer = pl.Trainer(
@@ -258,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--profile", action="store_true", default=False, help="")
     parser.add_argument("--autoencoder", action="store_true", default=False, help="")
     parser.add_argument("--find_lr", action="store_true", default=False, help="")
+    parser.add_argument("--test", action="store_true", default=False, help="")
     parser.add_argument(
         "--use_experiment_yaml", action="store_true", default=False, help=""
     )
