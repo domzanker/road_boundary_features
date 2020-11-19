@@ -279,16 +279,16 @@ class Decoder(Module):
         self,
         decoder_depth: int,
         conv_per_block: int,
-        blocks: Union[List[Dict[str, Any]], Dict[str, Dict[str, Any]]],
+        stages: Union[List[Dict[str, Any]], Dict[str, Dict[str, Any]]],
         *args,
         **kwargs,
     ):
         super(Decoder, self).__init__()
-        if isinstance(blocks, dict):
-            blocks = list(blocks.values())
-        self.blocks = torch.nn.ModuleList(
+        if isinstance(stages, dict):
+            stages = list(stages.values())
+        self.stages = torch.nn.ModuleList(
             [
-                DecoderBlock(**blocks[c], nmbr_convs=conv_per_block)
+                DecoderStage(**stages[c], nmbr_convs=conv_per_block)
                 for c in range(decoder_depth)
             ]
         )
@@ -301,13 +301,13 @@ class Decoder(Module):
         x = features[0]
         skips = [None, *features[1:]]
 
-        for i, block in enumerate(self.blocks):
+        for i, stage in enumerate(self.stages):
             skip = skips[i] if i < len(skips) else None
-            x = block(x, skip)
+            x = stage(x, skip)
         return x
 
 
-class DecoderBlock(Module):
+class DecoderStage(Module):
     def __init__(
         self,
         in_channels: Union[int, List[int]],
@@ -324,7 +324,7 @@ class DecoderBlock(Module):
         *args,
         **kwargs,
     ):
-        super(DecoderBlock, self).__init__()
+        super(DecoderStage, self).__init__()
         # every decoder block
 
         if not isinstance(in_channels, list):
@@ -340,7 +340,7 @@ class DecoderBlock(Module):
         if not isinstance(stride, list):
             stride = [stride for i in range(nmbr_convs)]
 
-        self.block = torch.nn.ModuleList(
+        self.stage = torch.nn.ModuleList(
             [
                 ConvBlock(
                     in_channels=in_channels[i],
@@ -385,7 +385,7 @@ class DecoderBlock(Module):
         if skip is not None:
             x = x + skip
 
-        for i, layer in enumerate(self.block):
+        for i, layer in enumerate(self.stage):
             if i == self.upsample_indx:
                 x = self.upsample(x)
             x = self.instance_normalize[i](x)
@@ -409,19 +409,14 @@ class Encoder(Module):
             out_channels = in_channels[1:]
             out_channels.append(in_channels[-1] * 2)
 
-        if "blocks" in kwargs.keys():
-            self.blocks = torch.nn.ModuleList(
-                [
-                    EncoderBlock(
-                        **blocks,
-                    )
-                    for key, blocks in kwargs["blocks"].items()
-                ]
+        if "stages" in kwargs.keys():
+            self.stages = torch.nn.ModuleList(
+                [EncoderStage(**blocks) for key, blocks in kwargs["stages"].items()]
             )
         else:
             self.blocks = torch.nn.ModuleList(
                 [
-                    EncoderBlock(
+                    EncoderStage(
                         in_channels=in_channels[i],
                         out_channels=out_channels[i],
                         **kwargs,
@@ -432,15 +427,15 @@ class Encoder(Module):
 
     def forward(self, x):
         out = []
-        for block in self.blocks:
-            x = block(x)
+        for stage in self.stages:
+            x = stage(x)
             out.append(x)
         return out
 
 
-class EncoderBlock(Module):
+class EncoderStage(Module):
     """
-    A EncoderBlock consists of 2 residual blocks
+    A EncoderStage consists of 2 residual blocks
     """
 
     def __init__(
@@ -454,7 +449,7 @@ class EncoderBlock(Module):
         *args,
         **kwargs,
     ):
-        super(EncoderBlock, self).__init__()
+        super(EncoderStage, self).__init__()
         if not isinstance(kernel_size, list):
             kernel_size = [kernel_size for i in range(1, nmbr_res_blocks)]
         if not isinstance(dilation, list):
@@ -463,7 +458,7 @@ class EncoderBlock(Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
 
-        self.head_block = ResidualBlock(
+        self.head_stage = ResidualBlock(
             in_channels=in_channels,
             out_channels=out_channels,
             stride=[downsample_factor, 1, 1],
@@ -487,7 +482,7 @@ class EncoderBlock(Module):
         )
 
     def forward(self, x):
-        x = self.head_block(x)
+        x = self.head_stage(x)
         x = self.tail(x)
         return x
 
