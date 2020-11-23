@@ -23,10 +23,8 @@ class RandomRotation(torch.nn.Module):
             return x
         direction = random.random()
         if direction < 0.5:
-            print("left")
             x = torch.transpose(x, -2, -1)
         else:
-            print("right")
             x = torch.transpose(x, -2, -1).flip(-1)
         return x
 
