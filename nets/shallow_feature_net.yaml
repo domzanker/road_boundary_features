@@ -5,7 +5,7 @@ input_channels: 5
 encoder_prec:
         conv:
                 out_channels: 32
-                stride: 1
+                stride: 2
                 dilation: 2
                 kernel_size: 7
                 dropout: 0.0
@@ -89,7 +89,7 @@ decoder:
                         dropout: 0.0
                         apply_instance_norm: True
 head: 
-        scale_factor: 1
+        scale_factor: 2
         branches:
 
                 distance_branch:
