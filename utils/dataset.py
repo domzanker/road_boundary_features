@@ -193,8 +193,8 @@ class RoadBoundaryDataset(Dataset):
             targets_torch = augmented[5:]
         else:
             cropped = self.crop(torch.cat([image_torch, targets_torch]))
-            image_torch = augmented[:5]
-            targets_torch = augmented[5:]
+            image_torch = cropped[:5]
+            targets_torch = cropped[5:]
 
         return (image_torch, targets_torch)
 
