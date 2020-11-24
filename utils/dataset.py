@@ -11,48 +11,12 @@ import torch.nn.functional as F
 import torchvision.transforms as vision_transforms
 from torch.utils.data import Dataset
 from torchvision.transforms.functional import to_tensor
-
-
-class RandomRotation(torch.nn.Module):
-    def __init__(self, p: float = 0.5):
-        super(RandomRotation, self).__init__()
-        self.p = p
-
-    def forward(self, x):
-        if random.random() > self.p:
-            return x
-        direction = random.random()
-        if direction < 0.5:
-            x = torch.transpose(x, -2, -1)
-        else:
-            x = torch.transpose(x, -2, -1).flip(-1)
-        return x
-
-    def __repr__(self):
-        return self.__class__.__name__ + "(p={})".format(self.p)
-
-
-class RandomCenteredCrop(torch.nn.Module):
-    def __init__(self, size: Union[int, Tuple[int, int]]):
-        super(RandomCenteredCrop, self).__init__()
-        self.target_size = (size, size) if isinstance(size, int) else size
-
-    def forward(self, x):
-        left = random.randint(0, x.shape[-1] - self.target_size[1])
-        top = random.randint(0, x.shape[-2] - self.target_size[0])
-
-        cropped = vision_transforms.functional_tensor.crop(
-            x,
-            top=top,
-            left=left,
-            height=self.target_size[0],
-            width=self.target_size[1],
-        )
-
-        return cropped
-
-    def __repr__(self):
-        return self.__class__.__name__ + "(size={})".format(self.target_size)
+from utils.augmentations import (
+    RandomHoricontalFlip,
+    RandomVerticalFlip,
+    RandomCenteredCrop,
+    RandomRotation,
+)
 
 
 class RoadBoundaryDataset(Dataset):
@@ -91,8 +55,8 @@ class RoadBoundaryDataset(Dataset):
             self.augmentation = vision_transforms.Compose(
                 [
                     # vision_transforms.RandomCrop(448),
-                    vision_transforms.RandomHorizontalFlip(p=augmentation),
-                    vision_transforms.RandomVerticalFlip(p=augmentation),
+                    RandomHoricontalFlip(p=augmentation),
+                    RandomVerticalFlip(p=augmentation),
                     RandomRotation(p=augmentation),
                 ]
             )

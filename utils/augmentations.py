@@ -1,8 +1,33 @@
+from typing import Tuple, Union
 from torchvision.transforms import functional as tv_func
+from torchvision.transforms import functional_tensor as tv_func_t
 from torch.nn import Module
 import torch
 import torchvision
 import random
+
+
+class RandomCenteredCrop(torch.nn.Module):
+    def __init__(self, size: Union[int, Tuple[int, int]]):
+        super(RandomCenteredCrop, self).__init__()
+        self.target_size = (size, size) if isinstance(size, int) else size
+
+    def forward(self, x):
+        left = random.randint(0, x.shape[-1] - self.target_size[1])
+        top = random.randint(0, x.shape[-2] - self.target_size[0])
+
+        cropped = tv_func_t.crop(
+            x,
+            top=top,
+            left=left,
+            height=self.target_size[0],
+            width=self.target_size[1],
+        )
+
+        return cropped
+
+    def __repr__(self):
+        return self.__class__.__name__ + "(size={})".format(self.target_size)
 
 
 class RandomHoricontalFlip(Module):
@@ -38,7 +63,7 @@ class RandomVerticalFlip(Module):
         return flip
 
     def __repr__(self):
-        pass
+        return self.__class__.__name__ + "(p={})".format(self.p)
 
 
 class RandomRotation(Module):
@@ -52,7 +77,6 @@ class RandomRotation(Module):
         # rotate 90 degrees clockwise
         if random.random() >= 0.5:
             return self._rotate_clock(x)
-            # rotate the vector field
         # rotate 90 degrees counter-clockwise
         else:
             return self._rotate_counter_clock(x)
@@ -77,13 +101,13 @@ class RandomRotation(Module):
         y_ = r[-1].clone()
         x_ = r[-2].clone()
 
-        r[-2, :, :] = y_
-        r[-1, :, :] = -x_
+        r[-2] = y_
+        r[-1] = -x_
 
         return r
 
     def __repr__(self):
-        pass
+        return self.__class__.__name__ + "(p={})".format(self.p)
 
 
 if __name__ == "__main__":
