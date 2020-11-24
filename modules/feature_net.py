@@ -34,7 +34,7 @@ class FeatureNet(pl.LightningModule):
         if self.model_configs["use_custom"]:
 
             self.encoder_prec = Sequential(
-                torch.nn.BatchNorm2d(4),
+                torch.nn.BatchNorm2d(self.model_configs["input_channels"]),
                 ConvBlock(
                     in_channels=self.model_configs["input_channels"],
                     **self.model_configs["encoder_prec"]["conv"],
@@ -84,7 +84,9 @@ class FeatureNet(pl.LightningModule):
 
         if "input_size" in self.model_configs.keys():
             s = self.model_configs["input_size"]
-            self.example_input_array = torch.ones([1, 4, s[0], s[1]])
+            self.example_input_array = torch.ones(
+                [1, self.model_configs["input_channels"], s[0], s[1]]
+            )
 
     def forward(self, x):
 
@@ -212,11 +214,19 @@ class FeatureNet(pl.LightningModule):
         dir_comp = make_grid([dir_dbg, dir_pred], nrow=1)
         self._log_image(dir_comp, "validation direction comparison")
 
-        lid = x[:, 3:, :, :]
+        lid = x[:, 3:4, :, :]
         lid -= lid.min()
         lid /= lid.max()
         lid = make_grid(apply_colormap(lid[:nmbr_images, :, :, :]), nrow=nrows)
         self._log_image(lid, "validation lidar input")
+
+        lid_deriv = x[:, 4:, :, :]
+        lid_deriv -= lid_deriv.min()
+        lid_deriv /= lid_deriv.max()
+        lid_deriv = make_grid(
+            apply_colormap(lid_deriv[:nmbr_images, :, :, :]), nrow=nrows
+        )
+        self._log_image(lid_deriv, "validation lidar height deriv")
 
         rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
         self._log_image(rgb, "validation input rgb")
