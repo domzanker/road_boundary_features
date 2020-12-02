@@ -1,0 +1,5 @@
+outs:
+- md5: a1910709a0701a39b7f3f42e871a2096.dir
+  size: 7603996800
+  nfiles: 1200
+  path: carla-15x10
