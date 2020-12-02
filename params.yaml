@@ -3,11 +3,11 @@ dataset:
         #size: [640, 360]
         #size: [1280, 720]
     size:
-    train-dataset: data/lyft-lvl5-15x10/train
-    valid-dataset: data/lyft-lvl5-15x10/valid
-    test-dataset: data/lyft-lvl5-15x10/test
+    train-dataset: data/carla-15x10/train
+    valid-dataset: data/carla-15x10/valid
+    test-dataset: data/carla-15x10/valid
     angle_bins:
-    augmentation: 0.3
+    augmentation: 0.4
 
 train:
     gpus: 0
