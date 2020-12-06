@@ -1,0 +1,5 @@
+outs:
+- md5: e3dff7aca171f2bfc461e1931208b9cb.dir
+  size: 34693968244
+  nfiles: 8221
+  path: carla-high-res-20x20
