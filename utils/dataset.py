@@ -49,7 +49,7 @@ class RoadBoundaryDataset(Dataset):
 
         self.angle_bins = angle_bins
 
-        self.crop = RandomCenteredCrop(448)
+        self.crop = None  # RandomCenteredCrop(448)
 
         if augmentation is not None:
             self.augmentation = vision_transforms.Compose(
@@ -150,9 +150,9 @@ class RoadBoundaryDataset(Dataset):
             )
             """
         if self.augmentation is not None:
-            cropped = self.crop(torch.cat([image_torch, targets_torch]))
+            # cropped = self.crop(torch.cat([image_torch, targets_torch]))
 
-            augmented = self.augmentation(cropped)
+            augmented = self.augmentation(torch.cat([image_torch, targets_torch]))
             image_torch = augmented[:5]
             targets_torch = augmented[5:]
         else:
