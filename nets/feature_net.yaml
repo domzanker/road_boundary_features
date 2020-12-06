@@ -1,6 +1,6 @@
 # set False for pre-defined networks
 use_custom: True
-input_size: [768, 448] # for 4 layer resnet: /112
+input_size: [448, 448] # for 4 layer resnet: /112
 input_channels: 4
         
 encoder_prec:
