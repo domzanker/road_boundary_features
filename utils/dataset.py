@@ -216,7 +216,7 @@ class RoadBoundaryDataset(Dataset):
         end_point_map = cv2.GaussianBlur(end_point_map, (55, 55), 8)
         # normalize in interval [0, 1)
         np.divide(end_point_map, np.max(end_point_map) + 1e-12, out=end_point_map)
-        end_point_map = torch.from_numpy(end_point_map[None, :, :]).permute(2, 0, 1)
+        end_point_map = torch.from_numpy(end_point_map[None, :, :])
 
         # create a gaussian kernel
         return end_point_map
