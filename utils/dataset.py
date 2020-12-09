@@ -151,6 +151,7 @@ class RoadBoundaryDataset(Dataset):
             """
         if self.augmentation is not None:
             cropped = self.crop(torch.cat([image_torch, targets_torch]))
+            cropped[6:5] = self._end_points(cropped[5:6])
 
             augmented = self.augmentation(cropped)
 
@@ -158,6 +159,7 @@ class RoadBoundaryDataset(Dataset):
             targets_torch = augmented[5:]
         else:
             cropped = self.crop(torch.cat([image_torch, targets_torch]))
+            cropped[6:5] = self._end_points(cropped[5:6])
 
             image_torch = cropped[:5]
             targets_torch = cropped[5:]
@@ -179,6 +181,45 @@ class RoadBoundaryDataset(Dataset):
         vector_field[0] = torch.cos(angle_map)
         vector_field[1] = torch.sin(angle_map)
         return vector_field
+
+    def _end_points(self, inverse_distance_map: torch.Tensor):
+
+        inverse_distance_map = inverse_distance_map.permute(1, 2, 0)
+        end_point_map = torch.zeros_like(inverse_distance_map)
+        max_value = inverse_distance_map.max().item()
+        mask = inverse_distance_map == max_value
+        torch.add(
+            end_point_map[:1, :, :],
+            1,
+            out=end_point_map[:1, :, :],
+            where=mask[:1, :, :],
+        ),
+        torch.add(
+            end_point_map[:, :1, :],
+            1,
+            out=end_point_map[:, :1, :],
+            where=mask[:, :1, :],
+        ),
+        torch.add(
+            end_point_map[-1:, :, :],
+            1,
+            out=end_point_map[-1:, :, :],
+            where=mask[-1:, :, :],
+        ),
+        torch.add(
+            end_point_map[:, -1:, :],
+            1,
+            out=end_point_map[:, -1:, :],
+            where=mask[:, -1:, :],
+        ),
+
+        end_point_map = cv2.GaussianBlur(end_point_map, (55, 55), 8)
+        # normalize in interval [0, 1)
+        torch.divide(end_point_map, torch.max(end_point_map) + 1e-12, out=end_point_map)
+        end_point_map = end_point_map.permute(2, 0, 1)
+
+        # create a gaussian kernel
+        return end_point_map
 
 
 class ImageDataset(RoadBoundaryDataset):
