@@ -83,11 +83,11 @@ class RoadBoundaryDataset(Dataset):
 
             rgb = torch.from_numpy(f["rgb"][()]).float() / 255  # uint8 -> float32
             h = np.nan_to_num(f["lidar_height"][()])
-            h = h[None, :, :]
-            height = torch.from_numpy(h).float()  # float16 -> float32
+            height = torch.from_numpy(h[None, :, :]).float()  # float16 -> float32
             height_deriv = torch.from_numpy(
                 cv2.Laplacian(h.astype(np.float32), cv2.CV_32F, ksize=3)
             ).float()
+            height_deriv = height_deriv[None, :, :]
 
             # float16->float32
             inverse_distance_map = torch.from_numpy(
