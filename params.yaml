@@ -7,7 +7,7 @@ dataset:
     valid-dataset: data/carla-high-res-20x20/valid
     test-dataset: data/carla-high-res-20x20/valid
     angle_bins:
-    augmentation: 0.4
+    augmentation: 0.5
 
 train:
     gpus: 0
