@@ -187,7 +187,7 @@ class RoadBoundaryDataset(Dataset):
         inverse_distance_map = inverse_distance_map.permute(1, 2, 0).numpy()
         end_point_map = np.zeros_like(inverse_distance_map)
         max_value = np.max(inverse_distance_map)
-        mask = inverse_distance_map == max_value
+        mask = inverse_distance_map >= 0.75 * max_value
         np.add(
             end_point_map[:1, :, :],
             1,
