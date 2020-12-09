@@ -184,29 +184,29 @@ class RoadBoundaryDataset(Dataset):
 
     def _end_points(self, inverse_distance_map: torch.Tensor):
 
-        inverse_distance_map = inverse_distance_map.permute(1, 2, 0)
-        end_point_map = torch.zeros_like(inverse_distance_map)
-        max_value = inverse_distance_map.max().item()
+        inverse_distance_map = inverse_distance_map.permute(1, 2, 0).numpy()
+        end_point_map = np.zeros_like(inverse_distance_map)
+        max_value = np.max(inverse_distance_map)
         mask = inverse_distance_map == max_value
-        torch.add(
+        np.add(
             end_point_map[:1, :, :],
             1,
             out=end_point_map[:1, :, :],
             where=mask[:1, :, :],
         ),
-        torch.add(
+        np.add(
             end_point_map[:, :1, :],
             1,
             out=end_point_map[:, :1, :],
             where=mask[:, :1, :],
         ),
-        torch.add(
+        np.add(
             end_point_map[-1:, :, :],
             1,
             out=end_point_map[-1:, :, :],
             where=mask[-1:, :, :],
         ),
-        torch.add(
+        np.add(
             end_point_map[:, -1:, :],
             1,
             out=end_point_map[:, -1:, :],
@@ -215,8 +215,8 @@ class RoadBoundaryDataset(Dataset):
 
         end_point_map = cv2.GaussianBlur(end_point_map, (55, 55), 8)
         # normalize in interval [0, 1)
-        torch.divide(end_point_map, torch.max(end_point_map) + 1e-12, out=end_point_map)
-        end_point_map = end_point_map.permute(2, 0, 1)
+        np.divide(end_point_map, np.max(end_point_map) + 1e-12, out=end_point_map)
+        end_point_map = torch.from_numpy(end_point_map).permute(2, 0, 1)
 
         # create a gaussian kernel
         return end_point_map
