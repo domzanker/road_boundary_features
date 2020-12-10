@@ -1,10 +1,37 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from torchvision.transforms import functional as tv_func
 from torchvision.transforms import functional_tensor as tv_func_t
 from torch.nn import Module
 import torch
 import torchvision
 import random
+
+
+class RandomRotatedCrop(Module):
+    def __init__(self, size: Union[int, Tuple[int, int]], p: float = 0.5):
+        super(RandomRotatedCrop, self).__init__()
+        self.p = p
+        if isinstance(size, (tuple, list)):
+            self.size = size
+        else:
+            self.size = (size, size)
+
+    def forward(self, x: List[torch.Tensor]):
+        if random.random() > self.p:
+            # return just the cropped image
+            return [tv_func_t.center_crop(img, self.size) for img in x]
+        else:
+            # find viable angles
+            out = []
+            angle = random.randint(-90, 90)
+            for image in x:
+                pil = tv_func.to_pil_image(image)
+                pil = tv_func.rotate(pil, angle=angle)
+                pil = tv_func.center_crop(pil, self.size)
+                out.append(tv_func.to_tensor(pil))
+
+            # return rotated crop
+            return out
 
 
 class RandomCenteredCrop(torch.nn.Module):
@@ -35,14 +62,15 @@ class RandomHoricontalFlip(Module):
         super(RandomHoricontalFlip, self).__init__()
         self.p = p
 
-    def forward(self, x):
+    def forward(self, x: List[torch.Tensor]):
         if random.random() > self.p:
             return x
 
-        flip = tv_func.hflip(x)
+        return [tv_func.hflip(i) for i in x]
+        # flip = tv_func.hflip(x)
         # all x-components in the vector field are now wrong
-        flip[-2] = -1 * flip[-2]
-        return flip
+        # flip[-2] = -1 * flip[-2]
+        # return flip
 
     def __repr__(self):
         return self.__class__.__name__ + "(p={})".format(self.p)
@@ -57,10 +85,11 @@ class RandomVerticalFlip(Module):
         if random.random() > self.p:
             return x
 
-        flip = tv_func.vflip(x)
+        return [tv_func.vflip(i) for i in x]
+        # flip = tv_func.vflip(x)
         # all y-components in the vector field are now wrong
-        flip[-1] = -1 * flip[-1]
-        return flip
+        # flip[-1] = -1 * flip[-1]
+        # return flip
 
     def __repr__(self):
         return self.__class__.__name__ + "(p={})".format(self.p)

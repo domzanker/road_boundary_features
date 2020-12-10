@@ -15,7 +15,7 @@ from utils.augmentations import (
     RandomHoricontalFlip,
     RandomVerticalFlip,
     RandomCenteredCrop,
-    RandomRotation,
+    RandomRotatedCrop,
 )
 
 
@@ -49,15 +49,14 @@ class RoadBoundaryDataset(Dataset):
 
         self.angle_bins = angle_bins
 
-        self.crop = RandomCenteredCrop(448)  # torch.nn.Identity()
-
         if augmentation is not None:
             self.augmentation = vision_transforms.Compose(
                 [
                     # vision_transforms.RandomCrop(448),
                     RandomHoricontalFlip(p=augmentation),
                     RandomVerticalFlip(p=augmentation),
-                    RandomRotation(p=augmentation),
+                    # vision_transforms.RandomRotation(degrees=90),
+                    RandomRotatedCrop(448, p=augmentation),
                 ]
             )
         else:
@@ -150,19 +149,25 @@ class RoadBoundaryDataset(Dataset):
             )
             """
         if self.augmentation is not None:
-            cropped = self.crop(torch.cat([image_torch, targets_torch]))
-            cropped[6:7] = self._end_points(cropped[5:6])
-            """
-            import matplotlib.pyplot as plt
 
-            plt.imshow(cropped[6:7].permute(1, 2, 0).numpy())
-            plt.show()
-            """
+            rgb, height, height_deriv, inverse_distance_map = self.augmentation(
+                [rgb, height, height_deriv, inverse_distance_map]
+            )
+            end_points_map = self._end_points(inverse_distance_map)
+            bounds = self._boundaries(inverse_distance_map)
+            road_direction_map = self._road_boundary_direction_map(bounds)
 
-            augmented = self.augmentation(cropped)
-
-            image_torch = augmented[:5]
-            targets_torch = augmented[5:]
+            targets_torch = torch.cat(
+                [
+                    inverse_distance_map,
+                    end_points_map,
+                    road_direction_map,
+                ],
+                0,
+            )
+            assert targets_torch.shape[0] == 4
+            # targets_torch = inverse_distance_map
+            image_torch = torch.cat([rgb, height, height_deriv])
         else:
             cropped = self.crop(torch.cat([image_torch, targets_torch]))
             cropped[6:7] = self._end_points(cropped[5:6])
@@ -188,39 +193,76 @@ class RoadBoundaryDataset(Dataset):
         vector_field[1] = torch.sin(angle_map)
         return vector_field
 
+    def _boundaries(self, inverse_distance_map: torch.Tensor):
+        inverse_distance_map = inverse_distance_map.permute(1, 2, 0).numpy()
+        boundary_map = np.full_like(
+            inverse_distance_map, fill_value=255, dtype=np.uint8
+        )
+        max_value = np.max(inverse_distance_map)
+        boundary_map[inverse_distance_map == max_value] = 0
+        return torch.from_numpy(boundary_map).permute(2, 0, 1)
+
+    def _road_boundary_direction_map(self, road_boundary_tensor: torch.Tensor):
+        road_boundary_image = road_boundary_tensor.permute(1, 2, 0).numpy()
+
+        transform_map = cv2.distanceTransform(
+            road_boundary_image,
+            distanceType=cv2.DIST_L2,
+            maskSize=cv2.DIST_MASK_PRECISE,
+        )
+
+        deriv_x = cv2.Sobel(transform_map, cv2.CV_32F, dx=1, dy=0)
+        deriv_y = cv2.Sobel(transform_map, cv2.CV_32F, dx=0, dy=1)
+
+        # now normalize
+        deriv = np.stack((deriv_x, deriv_y), axis=-1)
+
+        magnitude = np.linalg.norm(deriv, axis=2)
+        magnitude[magnitude == 0] = 1.0
+        normalized_vector_field = deriv / magnitude[:, :, np.newaxis]
+
+        return torch.from_numpy(normalized_vector_field).permute(2, 0, 1)
+
     def _end_points(self, inverse_distance_map: torch.Tensor):
+        kernel_size = 35
 
         inverse_distance_map = inverse_distance_map.permute(1, 2, 0).numpy()
         end_point_map = np.zeros_like(inverse_distance_map)
         max_value = np.max(inverse_distance_map)
         mask = inverse_distance_map == max_value
         np.add(
-            end_point_map[:2, :, :],
-            1,
-            out=end_point_map[:2, :, :],
-            where=mask[:2, :, :],
+            end_point_map[:1, :, :],
+            kernel_size ** 2,
+            out=end_point_map[:1, :, :],
+            where=mask[:1, :, :],
         ),
         np.add(
-            end_point_map[:, :2, :],
-            1,
-            out=end_point_map[:, :2, :],
-            where=mask[:, :2, :],
+            end_point_map[:, :1, :],
+            kernel_size ** 2,
+            out=end_point_map[:, :1, :],
+            where=mask[:, :1, :],
         ),
         np.add(
-            end_point_map[-2:, :, :],
-            1,
-            out=end_point_map[-2:, :, :],
-            where=mask[-2:, :, :],
+            end_point_map[-1:, :, :],
+            kernel_size ** 2,
+            out=end_point_map[-1:, :, :],
+            where=mask[-1:, :, :],
         ),
         np.add(
-            end_point_map[:, -2:, :],
-            1,
-            out=end_point_map[:, -2:, :],
-            where=mask[:, -2:, :],
+            end_point_map[:, -1:, :],
+            kernel_size ** 2,
+            out=end_point_map[:, -1:, :],
+            where=mask[:, -1:, :],
         ),
 
         # create a gaussian kernel
-        end_point_map = cv2.GaussianBlur(end_point_map, (15, 15), 5)
+        end_point_map = cv2.GaussianBlur(
+            end_point_map,
+            (kernel_size, kernel_size),
+            9,
+            borderType=cv2.BORDER_REFLECT,
+        )
+        end_point_map = end_point_map * kernel_size ** 2
 
         # normalize in interval [0, 1)
         np.divide(end_point_map, np.max(end_point_map) + 1e-12, out=end_point_map)
