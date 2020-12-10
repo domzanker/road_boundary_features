@@ -49,6 +49,8 @@ class RoadBoundaryDataset(Dataset):
 
         self.angle_bins = angle_bins
 
+        self.crop = RandomRotatedCrop(448, p=-1)
+
         if augmentation is not None:
             self.augmentation = vision_transforms.Compose(
                 [
@@ -169,11 +171,24 @@ class RoadBoundaryDataset(Dataset):
             # targets_torch = inverse_distance_map
             image_torch = torch.cat([rgb, height, height_deriv])
         else:
-            cropped = self.crop(torch.cat([image_torch, targets_torch]))
-            cropped[6:7] = self._end_points(cropped[5:6])
+            rgb, height, height_deriv, inverse_distance_map = self.crop(
+                [rgb, height, height_deriv, inverse_distance_map]
+            )
+            end_points_map = self._end_points(inverse_distance_map)
+            bounds = self._boundaries(inverse_distance_map)
+            road_direction_map = self._road_boundary_direction_map(bounds)
 
-            image_torch = cropped[:5]
-            targets_torch = cropped[5:]
+            targets_torch = torch.cat(
+                [
+                    inverse_distance_map,
+                    end_points_map,
+                    road_direction_map,
+                ],
+                0,
+            )
+            assert targets_torch.shape[0] == 4
+            # targets_torch = inverse_distance_map
+            image_torch = torch.cat([rgb, height, height_deriv])
 
         return (image_torch, targets_torch)
 
