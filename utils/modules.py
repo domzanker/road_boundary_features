@@ -36,7 +36,7 @@ class SegmentationHead(nn.Module):
     def __init__(
         self,
         branches: Union[List[List[int]], List[Dict[str, Any]]],
-        upsample_mode: str = "nearest",
+        upsampling_mode: str = "nearest",
         scale_factor: float = 4.0,
         **kwargs
     ):
@@ -84,6 +84,11 @@ class SegmentationHead(nn.Module):
             batch_norm = branch["batch_norm"]
             end_activation = branch["end_activation"]
 
+            if "upsampling_mode" not in branch:
+                branch["upsampling_mode"] = upsampling_mode
+            if "scale_factor" not in branch:
+                branch["scale_factor"] = scale_factor
+
             self.branches.append(
                 SegmentationBranch(
                     in_channels=in_channels,
@@ -94,8 +99,8 @@ class SegmentationHead(nn.Module):
                     dilation=dilation,
                     end_activation=end_activation,
                     batch_norm=batch_norm,
-                    upsample_mode=upsample_mode,
-                    scale_factor=scale_factor,
+                    upsampling_mode=branch["upsampling_mode"],
+                    scale_factor=branch["scale_factor"],
                 )
             )
 
@@ -117,7 +122,7 @@ class SegmentationBranch(nn.Module):
         dilation: Union[int, Tuple[int, int], List[int], List[Tuple[int, int]]] = 1,
         end_activation: str = "relu",
         batch_norm: bool = True,
-        upsample_mode: str = "nearest",
+        upsampling_mode: str = "nearest",
         scale_factor: float = 2.0,
         activation: str = "relu",
     ):
@@ -134,7 +139,20 @@ class SegmentationBranch(nn.Module):
 
         # TODO get out_channels
 
-        self.upsampling = nn.Upsample(scale_factor=scale_factor, mode=upsample_mode)
+        if upsampling_mode == "transposed":
+            self.upsampling = torch.nn.ConvTranspose2d(
+                in_channels=in_channels[0],
+                out_channels=in_channels[0],
+                kernel_size=kernel_sizes[0],
+                stride=scale_factor,
+                padding=1,
+                output_padding=1,
+                dilation=1,
+            )
+        else:
+            self.upsampling = nn.Upsample(
+                scale_factor=scale_factor, mode=upsampling_mode
+            )
 
         self.conv_blocks = nn.ModuleList(
             [

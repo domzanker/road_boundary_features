@@ -237,6 +237,16 @@ class FeatureNet(pl.LightningModule):
         rgb = make_grid(x[:nmbr_images, :3, :, :], nrow=nrows)
         self._log_image(rgb, "validation input rgb")
 
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        prec = self.encoder_prec(x)
+        encoding = self.encoder(prec)
+        decoding = self.decoder(*encoding)
+        segmentation = self.head(decoding)
+
+        losses = self.loss(segmentation, y)
+        return losses
+
     def _log_image(self, img, tag):
         self.logger[0].experiment.add_image(
             tag=tag,
@@ -363,11 +373,22 @@ class DecoderStage(Module):
             size = None
             factor = upsampling
         self.upsample_indx = upsample_indx
-        self.upsample = torch.nn.Upsample(
-            size=size,
-            scale_factor=factor,
-            mode=upsampling_mode,
-        )
+        if upsampling_mode == "transposed":
+            self.upsample = torch.nn.ConvTranspose2d(
+                in_channels=in_channels[upsample_indx],
+                out_channels=in_channels[upsample_indx],
+                kernel_size=kernel_size[upsample_indx],
+                stride=factor,
+                padding=1,
+                output_padding=1,
+                dilation=1,
+            )
+        else:
+            self.upsample = torch.nn.Upsample(
+                size=size,
+                scale_factor=factor,
+                mode=upsampling_mode,
+            )
         if apply_instance_norm:
             self.instance_normalize = torch.nn.ModuleList(
                 [
