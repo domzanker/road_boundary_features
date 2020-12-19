@@ -49,7 +49,7 @@ class RoadBoundaryDataset(Dataset):
 
         self.angle_bins = angle_bins
 
-        self.crop = RandomRotatedCrop(448, p=-1)
+        self.crop = RandomRotatedCrop(image_size[0], p=-1)
 
         if augmentation is not None:
             self.augmentation = vision_transforms.Compose(
@@ -58,7 +58,7 @@ class RoadBoundaryDataset(Dataset):
                     RandomHoricontalFlip(p=augmentation),
                     RandomVerticalFlip(p=augmentation),
                     # vision_transforms.RandomRotation(degrees=90),
-                    RandomRotatedCrop(448, p=augmentation),
+                    RandomRotatedCrop(image_size[0], p=augmentation),
                 ]
             )
         else:
