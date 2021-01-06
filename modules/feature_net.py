@@ -559,7 +559,7 @@ class MeanAbsAngleDeviation(Metric):
 
         self.add_state(
             "sum_angle_deviation",
-            default=torch.tensor(0, dtype=torch.float),
+            default=torch.tensor(0, dtype=torch.float64),
             dist_reduce_fx="sum",
         )
         self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
