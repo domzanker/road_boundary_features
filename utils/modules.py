@@ -137,6 +137,9 @@ class SegmentationBranch(nn.Module):
         activations = [activation for _ in range(depth)]
         activations[-1] = end_activation
 
+        batch_norm = [batch_norm for _ in range(depth)]
+        batch_norm[-1] = False
+
         # TODO get out_channels
 
         if upsampling_mode == "transposed":
