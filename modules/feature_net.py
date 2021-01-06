@@ -19,6 +19,7 @@ from utils.losses import MultiTaskUncertaintyLoss
 
 from utils.dataset import RoadBoundaryDataset
 import pytorch_lightning as pl
+from pytorch_lightning.metrics.metric import Metric
 from utils.image_transforms import angle_map, apply_colormap
 
 
@@ -73,9 +74,9 @@ class FeatureNet(pl.LightningModule):
         self.train_mse = pl.metrics.MeanSquaredError()
         self.train_dist_mse = pl.metrics.MeanSquaredError()
         self.train_end_mse = pl.metrics.MeanSquaredError()
-        self.train_dir_mse = pl.metrics.MeanSquaredError()
+        self.train_dir_mse = MeanAbsAngleDeviation()
 
-        self.val_dir_mse = pl.metrics.MeanSquaredError()
+        self.val_dir_mse = MeanAbsAngleDeviation()
         self.val_dist_mse = pl.metrics.MeanSquaredError()
         self.val_end_mse = pl.metrics.MeanSquaredError()
         self.val__mse = pl.metrics.MeanSquaredError()
@@ -166,7 +167,7 @@ class FeatureNet(pl.LightningModule):
                 "val_mse": self.val__mse(segmentation, y).item(),
                 "val_dist_mse": self.val_dist_mse(segmentation[:, :1], y[:, :1]).item(),
                 "val_end_mse": self.val_end_mse(segmentation[:, 1:2], y[:, 1:2]).item(),
-                "val_dir_mse": self.val_dir_mse(segmentation[:, 2:4], y[:, 2:4]).item(),
+                "val_dir_mad": self.val_dir_mse(segmentation[:, 2:4], y[:, 2:4]).item(),
             },
             on_step=False,
             on_epoch=True,
@@ -546,6 +547,34 @@ class AEHead(Module):
 
     def forward(self, x):
         return self.head(x)
+
+
+class MeanAbsAngleDeviation(Metric):
+    """
+    Compute the mean angle deviation between two vector fields
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.add_state(
+            "sum_angle_deviation", default=torch.tensor(0), dist_reduce_fx="sum"
+        )
+        self.add_state("total", default=torch.tensor(0), dist_reduce_fx="sum")
+
+    def update(self, preds: torch.Tensor, target: torch.Tensor):
+        preds, target = self._input_format(preds, target)
+        angles_deviation = torch.atan2(preds, target)
+        assert preds.shape == target.shape
+
+        angles_deviation = torch.abs(torch.atan2(preds, target))
+
+        self.sum_angle_deviation += angles_deviation.sum()
+
+        self.total += target.numel()
+
+    def compute(self):
+        return self.sum_angle_deviation.float() / self.total
 
 
 if __name__ == "__main__":
