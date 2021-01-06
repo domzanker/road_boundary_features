@@ -166,7 +166,7 @@ class SegmentationBranch(nn.Module):
                     stride=strides[i],
                     dilation=dilation[i],
                     activation=activations[i],
-                    batch_norm=batch_norm,
+                    batch_norm=batch_norm[i],
                 )
                 for i in range(depth)
             ]
