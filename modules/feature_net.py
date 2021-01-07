@@ -567,7 +567,9 @@ class MeanAbsAngleDeviation(Metric):
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         self._check_same_shape(preds, target)
 
-        angles_deviation = torch.abs(torch.atan2(preds, target))
+        angles_deviation = torch.abs(
+            torch.acos(torch.nn.functional.cosine_similarity(preds, target, dim=-1))
+        )
 
         self.sum_angle_deviation += angles_deviation.sum()
 
