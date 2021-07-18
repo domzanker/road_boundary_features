@@ -24,6 +24,7 @@ def update_axis(sample_inx, ax):
 
     rgb = sample_data[:3, :, :].numpy()
     lidar_height = sample_data[3:4, :, :]
+    lidar_height_deriv = sample_data[4:5, :, :]
 
     distance_map = sample_targets[:1, :, :]
     distance_map = apply_colormap(distance_map)
@@ -42,9 +43,17 @@ def update_axis(sample_inx, ax):
     lidar_height = apply_colormap(lidar_height)
     lidar_height = lidar_height.numpy()
 
+    lidar_height_deriv = lidar_height_deriv.abs()
+    lidar_height_deriv -= lidar_height_deriv.min()
+    lidar_height_deriv[lidar_height_deriv[:, :] >= 1] = 1
+    lidar_height_deriv /= lidar_height_deriv.max()
+    lidar_height_deriv = apply_colormap(lidar_height_deriv, cv2.COLORMAP_BONE)
+    lidar_height_deriv = lidar_height_deriv.numpy()
+
     # cv2.imwrite(str(args.outdir / "height.png"), float2byte(lidar_height))
     cv2.imwrite(str(args.outdir / "rgb.png"), float2byte(rgb))
     cv2.imwrite(str(args.outdir / "lidar.png"), float2byte(lidar_height))
+    cv2.imwrite(str(args.outdir / "lidar_deriv.png"), float2byte(lidar_height_deriv))
 
     cv2.imwrite(str(args.outdir / "distance_map.png"), float2byte(distance_map))
     cv2.imwrite(str(args.outdir / "endpoints.png"), float2byte(end_points))
@@ -52,6 +61,7 @@ def update_axis(sample_inx, ax):
 
     handles[0][0].set_data(float2byte(rgb))
     handles[0][1].set_data(float2byte(lidar_height))
+    handles[0][2].set_data(float2byte(lidar_height_deriv))
 
     handles[1][0].set_data(float2byte(distance_map))
     handles[1][1].set_data(float2byte(end_points))
@@ -61,14 +71,14 @@ def update_axis(sample_inx, ax):
 
 
 def find_next_index():
-    global dataset, scene
+    global dataset, scene, args
 
     search = True
     scene += 1
     while search:
         try:
             sample_inx = dataset.index.index(
-                dataset.path / f"Town03_scene_{scene}_sample_1_data.h5"
+                dataset.path / f"{args.prefix}scene_{scene}_sample_1_data.h5"
             )
             search = False
             return sample_inx
@@ -92,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--outdir", type=Path, default="/tmp/samples/")
     parser.add_argument("--sample", type=int, default=10)
+    parser.add_argument("--prefix", default="")
 
     args = parser.parse_args()
     args.outdir.mkdir(exist_ok=True, parents=True)
@@ -111,6 +122,7 @@ if __name__ == "__main__":
 
     rgb = sample_data[:3, :, :].numpy()
     lidar_height = sample_data[3:4, :, :]
+    lidar_height_deriv = sample_data[4:5, :, :]
 
     distance_map = sample_targets[:1, :, :]
     distance_map = apply_colormap(distance_map)
@@ -129,9 +141,18 @@ if __name__ == "__main__":
     lidar_height = apply_colormap(lidar_height)
     lidar_height = lidar_height.numpy()
 
+    lidar_height_deriv = lidar_height_deriv.abs()
+    lidar_height_deriv -= lidar_height_deriv.min()
+    print(lidar_height_deriv.max())
+    # lidar_height_deriv[lidar_height_deriv[:, :] >= 1] = 1
+    lidar_height_deriv /= lidar_height_deriv.max()
+    lidar_height_deriv = apply_colormap(lidar_height_deriv, cv2.COLORMAP_BONE)
+    lidar_height_deriv = lidar_height_deriv.numpy()
+
     # cv2.imwrite(str(args.outdir / "height.png"), float2byte(lidar_height))
     cv2.imwrite(str(args.outdir / "rgb.png"), float2byte(rgb))
     cv2.imwrite(str(args.outdir / "lidar.png"), float2byte(lidar_height))
+    cv2.imwrite(str(args.outdir / "lidar_deriv.png"), float2byte(lidar_height_deriv))
 
     cv2.imwrite(str(args.outdir / "distance_map.png"), float2byte(distance_map))
     cv2.imwrite(str(args.outdir / "endpoints.png"), float2byte(end_points))
@@ -143,6 +164,7 @@ if __name__ == "__main__":
 
     handles[0].append(ax[0][0].imshow(float2byte(rgb)))
     handles[0].append(ax[0][1].imshow(float2byte(lidar_height)))
+    handles[0].append(ax[0][2].imshow(float2byte(lidar_height_deriv)))
 
     handles[1].append(ax[1][0].imshow(float2byte(distance_map)))
     handles[1].append(ax[1][1].imshow(float2byte(end_points)))

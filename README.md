@@ -46,6 +46,7 @@ The follwing tag have been used for experiments in the thesis:
 
 ##### Datasets
 4stages-carla: 759df0806f10447b8291fddffa1903c7  
+4stages-lyft: 38c50728e13d4c9fb9067c97fad8948b  
 4stages-nuscenes: c66455d1fb4846f986a703479dfd3492  
 
 ##### Depth
@@ -54,7 +55,7 @@ The follwing tag have been used for experiments in the thesis:
 2stages-carla: 0a8182a60b404624b97bc49b415eb6f0  
 
 4stages-lyft: 38c50728e13d4c9fb9067c97fad8948b  
-3stages-lyft: 4e43e36dac194858ab2d921c6f076a38  
+3stages-lyft: keine comet_logs; csv unter data/thesis_trainings/3stages_lyft  
 
 ##### Upsampling
 4stages-carla: 759df0806f10447b8291fddffa1903c7  
